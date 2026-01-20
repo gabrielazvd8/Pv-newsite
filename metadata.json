@@ -1,0 +1,7 @@
+{
+  "name": "Premium Dark Jersey Catalog",
+  "description": "A high-end, dark-mode showcase for football shirts with a built-in administrative panel.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
