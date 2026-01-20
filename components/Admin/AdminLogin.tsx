@@ -24,7 +24,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onCancel }) => {
     <div className="fixed inset-0 bg-black flex items-center justify-center p-4 z-[100]">
       <div className="w-full max-w-md bg-zinc-950 p-10 rounded-[40px] border border-zinc-900 shadow-2xl">
         <div className="text-center mb-10">
-           <img src="/img/IMG_3069.PNG" alt="PV Sports" className="h-16 mx-auto mb-6" />
+           <img src="assets/img/IMG_3069.PNG" alt="PV Sports" className="h-16 mx-auto mb-6" />
            <h2 className="text-xl font-black uppercase tracking-tighter">Área Restrita</h2>
         </div>
         <form onSubmit={handle} className="space-y-6">

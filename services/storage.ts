@@ -1,10 +1,12 @@
 
-import { Product, Category, Subcategory, AppSettings } from '../types';
+import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo } from '../types';
 
 const PRODUCTS_KEY = 'pv_products_v2';
 const CATEGORIES_KEY = 'pv_categories_v2';
 const SUBCATEGORIES_KEY = 'pv_subcategories_v2';
 const SETTINGS_KEY = 'pv_settings_v2';
+const CAROUSEL_KEY = 'pv_carousel_v2';
+const LOGOS_KEY = 'pv_logos_v2';
 
 export const getCategories = (): Category[] => {
   const stored = localStorage.getItem(CATEGORIES_KEY);
@@ -28,30 +30,59 @@ export const saveSubcategories = (data: Subcategory[]) => localStorage.setItem(S
 
 export const getProducts = (): Product[] => {
   const stored = localStorage.getItem(PRODUCTS_KEY);
-  const products: Product[] = stored ? JSON.parse(stored) : [
-    {
-      id: 'p1',
-      name: "Manchester City Home 24/25",
-      categoryId: 'cat1',
-      subcategoryId: 'sub1',
-      image: "https://images.unsplash.com/photo-1622146924843-09405625c15e?auto=format&fit=crop&q=80&w=800",
-      description: "Edição especial com detalhes em relevo.",
-      isProntaEntrega: true,
-      isLancamento: true
-    }
-  ];
-  // Ensure backward compatibility for the new flag
+  const products: any[] = stored ? JSON.parse(stored) : [];
   return products.map(p => ({
     ...p,
-    isLancamento: p.isLancamento ?? false
+    isLancamento: p.isLancamento ?? false,
+    isPromo: p.isPromo ?? false,
+    isProntaEntrega: p.isProntaEntrega ?? false,
+    images: p.images || (p.image ? [p.image] : [])
   }));
 };
 
 export const saveProducts = (data: Product[]) => localStorage.setItem(PRODUCTS_KEY, JSON.stringify(data));
 
+export const getCarouselImages = (): CarouselImage[] => {
+  const stored = localStorage.getItem(CAROUSEL_KEY);
+  const defaultCarousel = [
+    { 
+      id: 'h1',
+      url: 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=1200', 
+      title: 'LEGADO EUROPEU',
+      subtitle: 'COLEÇÃO 24/25',
+      active: true
+    },
+    { 
+      id: 'h2',
+      url: 'https://images.unsplash.com/photo-1511886929837-354d827aae26?q=80&w=1200', 
+      title: 'SELEÇÕES DE ELITE',
+      subtitle: 'O MUNDO EM CAMPO',
+      active: true
+    }
+  ];
+  return stored ? JSON.parse(stored) : defaultCarousel;
+};
+
+export const saveCarouselImages = (data: CarouselImage[]) => localStorage.setItem(CAROUSEL_KEY, JSON.stringify(data));
+
+export const getLogos = (): Logo[] => {
+  const stored = localStorage.getItem(LOGOS_KEY);
+  const defaultLogos = [
+    { id: 'default', url: 'assets/img/IMG_3069.PNG', name: 'Logo Padrão' }
+  ];
+  return stored ? JSON.parse(stored) : defaultLogos;
+};
+
+export const saveLogos = (data: Logo[]) => localStorage.setItem(LOGOS_KEY, JSON.stringify(data));
+
 export const getSettings = (): AppSettings => {
   const stored = localStorage.getItem(SETTINGS_KEY);
-  const defaultSettings = { prontaEntregaSectionActive: true, lancamentoSectionActive: true };
+  const defaultSettings: AppSettings = { 
+    promoSectionActive: false,
+    prontaEntregaSectionActive: true, 
+    lancamentoSectionActive: true,
+    activeLogoId: 'default'
+  };
   return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
 };
 

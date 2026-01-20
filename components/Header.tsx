@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Category, Subcategory } from '../types';
+import { Category, Subcategory, Logo } from '../types';
 import SearchBar from './SearchBar';
 
 interface HeaderProps {
@@ -14,11 +14,13 @@ interface HeaderProps {
   activeSubcategory: string;
   onSubcategoryChange: (id: string) => void;
   onAdminClick: () => void;
+  activeLogo?: Logo;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   isScrolled, searchQuery, onSearchChange, categories, subcategories, 
-  activeCategory, onCategoryChange, activeSubcategory, onSubcategoryChange, onAdminClick 
+  activeCategory, onCategoryChange, activeSubcategory, onSubcategoryChange, onAdminClick,
+  activeLogo
 }) => {
   return (
     <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-700 ${isScrolled ? 'bg-black/95 backdrop-blur-xl py-4 border-b border-zinc-900 shadow-2xl' : 'bg-transparent py-10'}`}>
@@ -31,10 +33,10 @@ const Header: React.FC<HeaderProps> = ({
             className={`transition-all duration-700 cursor-pointer z-20 ${isScrolled ? 'w-24 md:w-32 transform-none' : 'w-48 md:w-64 transform -translate-y-2'}`} 
             onClick={() => { onCategoryChange('All'); window.scrollTo({top: 0, behavior: 'smooth'}); }}
           >
-             <img src="/img/IMG_3069.PNG" alt="PV Sports" className="w-full h-auto drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all" />
+             <img src={activeLogo?.url || "assets/img/IMG_3069.PNG"} alt="PV Sports" className="w-full h-auto drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all" />
           </div>
 
-          {/* Search Bar - No scroll */}
+          {/* Search Bar - Visible on scroll */}
           <div className={`absolute left-1/2 -translate-x-1/2 w-full max-w-lg transition-all duration-700 pointer-events-none px-4 ${isScrolled ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 -translate-y-8 scale-90'}`}>
             <SearchBar value={searchQuery} onChange={onSearchChange} neonEffect={false} />
           </div>
@@ -91,7 +93,7 @@ const Header: React.FC<HeaderProps> = ({
                       onClick={() => onSubcategoryChange(sub.id)}
                       className={`flex items-center gap-3 w-full px-4 py-3 text-[10px] uppercase font-black tracking-widest rounded-xl transition-colors ${activeSubcategory === sub.id ? 'bg-green-500/10 text-green-500' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
                      >
-                       <img src={sub.image || 'https://placehold.co/40x40/222/555'} className="w-6 h-6 rounded object-cover" alt="" />
+                       {sub.image && <img src={sub.image} className="w-6 h-6 rounded object-cover" alt="" />}
                        {sub.name}
                      </button>
                    ))}

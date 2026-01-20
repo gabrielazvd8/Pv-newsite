@@ -17,17 +17,36 @@ export interface Product {
   name: string;
   categoryId: string;
   subcategoryId: string;
-  image: string;
+  image: string; // Imagem Principal
+  images: string[]; // Galeria de Imagens
   description: string;
   isProntaEntrega: boolean;
-  isLancamento: boolean; // New field for launch section
+  isLancamento: boolean;
+  isPromo: boolean;
   featured?: boolean;
-  price?: string; // Optional price for display
+  price?: string;
+  oldPrice?: string;
+}
+
+export interface CarouselImage {
+  id: string;
+  url: string;
+  title?: string;
+  subtitle?: string;
+  active: boolean;
+}
+
+export interface Logo {
+  id: string;
+  url: string;
+  name: string;
 }
 
 export interface AppSettings {
+  promoSectionActive: boolean;
   prontaEntregaSectionActive: boolean;
-  lancamentoSectionActive: boolean; // New setting for visibility control
+  lancamentoSectionActive: boolean;
+  activeLogoId: string;
 }
 
 export type AppView = 'store' | 'admin' | 'login';
