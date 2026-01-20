@@ -51,8 +51,9 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
 
         <div className="w-full md:w-2/5 p-8 md:p-14 overflow-y-auto flex flex-col">
           <div className="mb-auto">
+            {/* Corrected: product.category does not exist in the Product type. Using categoryId instead. */}
             <span className="inline-block px-3 py-1 bg-zinc-800 text-[9px] uppercase tracking-[0.3em] text-zinc-400 font-bold mb-6 rounded">
-              {product.category}
+              {product.categoryId}
             </span>
             <h2 className="text-4xl font-black text-white leading-none mb-6">
               {product.name}

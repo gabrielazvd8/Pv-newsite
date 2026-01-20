@@ -21,14 +21,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
           loading="lazy"
         />
         
-        {/* Pronta Entrega Badge */}
-        {product.isProntaEntrega && (
-          <div className="absolute top-4 left-4 z-10">
+        {/* Badges Container */}
+        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+          {product.isLancamento && (
+            <div className="bg-white text-black text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter shadow-lg shadow-white/10 border border-zinc-200">
+              New
+            </div>
+          )}
+          {product.isProntaEntrega && (
             <div className="bg-green-500 text-black text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter shadow-lg shadow-green-500/20">
               Pronta Entrega
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         

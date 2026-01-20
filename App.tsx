@@ -7,15 +7,17 @@ import Hero from './components/Hero';
 import SearchBar from './components/SearchBar';
 import ProductGrid from './components/ProductGrid';
 import ProductModal from './components/ProductModal';
+import CategoryCarousel from './components/CategoryCarousel';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminLogin from './components/Admin/AdminLogin';
 
+// Main App Component
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('store');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [settings, setSettings] = useState<AppSettings>({ prontaEntregaSectionActive: true });
+  const [settings, setSettings] = useState<AppSettings>({ prontaEntregaSectionActive: true, lancamentoSectionActive: true });
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -34,7 +36,6 @@ const App: React.FC = () => {
     if (auth === 'true') setIsAuthenticated(true);
 
     const handleScroll = () => {
-      // Threshold to trigger header transformation
       setIsScrolled(window.scrollY > 150);
     };
     window.addEventListener('scroll', handleScroll);
@@ -54,6 +55,10 @@ const App: React.FC = () => {
     return products.filter(p => p.isProntaEntrega);
   }, [products]);
 
+  const lancamentoProducts = useMemo(() => {
+    return products.filter(p => p.isLancamento);
+  }, [products]);
+
   const handleAdminUpdate = () => {
     setProducts(storage.getProducts());
     setCategories(storage.getCategories());
@@ -62,7 +67,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-green-500/30">
+    <div className="min-h-screen bg-black text-white selection:bg-green-500/30 flex flex-col">
       {view === 'store' && (
         <>
           <Header 
@@ -78,10 +83,9 @@ const App: React.FC = () => {
             onAdminClick={() => setView(isAuthenticated ? 'admin' : 'login')}
           />
           
-          <main>
+          <main className="flex-grow">
             <Hero />
             
-            {/* Initial Search Bar Position */}
             <div className={`transition-all duration-700 container mx-auto px-4 mb-20 ${isScrolled ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
               <SearchBar 
                 value={searchQuery} 
@@ -90,6 +94,7 @@ const App: React.FC = () => {
               />
             </div>
 
+            {/* Armadura PV Section (Principais) */}
             <section className="container mx-auto px-4 py-12">
               <div className="flex items-center justify-between mb-12">
                 <h2 className="text-3xl font-black uppercase tracking-tighter border-l-8 border-green-500 pl-6">
@@ -107,14 +112,46 @@ const App: React.FC = () => {
               ) : (
                 <div className="py-32 text-center">
                   <p className="text-zinc-600 uppercase tracking-[0.3em] font-bold text-sm">A busca não retornou resultados.</p>
-                  <button onClick={() => {setSearchQuery(''); setActiveCategory('All');}} className="mt-4 text-green-500 text-xs font-black uppercase tracking-widest hover:underline">Limpar Filtros</button>
+                  <button onClick={() => {setSearchQuery(''); setActiveCategory('All'); setActiveSubcategory('All');}} className="mt-4 text-green-500 text-xs font-black uppercase tracking-widest hover:underline">Limpar Filtros</button>
                 </div>
               )}
             </section>
 
-            {/* Seção Pronta Entrega no final */}
+            {/* Seção Lançamento */}
+            {settings.lancamentoSectionActive && lancamentoProducts.length > 0 && (
+              <section className="bg-zinc-950/50 border-t border-zinc-900 py-24 mt-20">
+                <div className="container mx-auto px-4">
+                  <div className="flex flex-col items-center mb-16 text-center">
+                    <span className="text-white text-[11px] font-black uppercase tracking-[0.5em] mb-4 bg-white/5 px-4 py-1 rounded-full border border-white/10">
+                      Novidade
+                    </span>
+                    <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-white">
+                      LANÇA<span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 to-zinc-500">MENTO</span>
+                    </h2>
+                    <p className="text-zinc-500 max-w-md mt-6 text-sm uppercase tracking-widest font-medium opacity-60">
+                      As armaduras mais recentes da temporada chegaram.
+                    </p>
+                    <div className="w-24 h-1.5 bg-white mt-8 shadow-[0_0_20px_rgba(255,255,255,0.2)] rounded-full"></div>
+                  </div>
+                  
+                  <ProductGrid products={lancamentoProducts} onProductClick={setSelectedProduct} />
+                </div>
+              </section>
+            )}
+
+            {/* Categorias Interactive Carousel Section */}
+            <CategoryCarousel 
+              categories={categories}
+              subcategories={subcategories}
+              activeCategory={activeCategory}
+              onCategoryChange={(id) => { setActiveCategory(id); setActiveSubcategory('All'); }}
+              activeSubcategory={activeSubcategory}
+              onSubcategoryChange={setActiveSubcategory}
+            />
+
+            {/* Seção Pronta Entrega */}
             {settings.prontaEntregaSectionActive && prontaEntregaProducts.length > 0 && (
-              <section className="bg-zinc-950 border-y border-zinc-900 py-24 mt-20">
+              <section className="bg-zinc-950 border-y border-zinc-900 py-24">
                 <div className="container mx-auto px-4">
                   <div className="flex flex-col items-center mb-16 text-center">
                     <span className="text-green-500 text-[11px] font-black uppercase tracking-[0.5em] mb-4 bg-green-500/10 px-4 py-1 rounded-full border border-green-500/20">
@@ -153,20 +190,34 @@ const App: React.FC = () => {
             </div>
           </footer>
 
-          <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+          <div className="bg-[#0b0b0b] py-8 border-t border-zinc-900/50 text-center">
+            <a 
+              href="https://wa.me/5584998081630" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 text-[10px] text-zinc-600 hover:text-green-500 transition-colors uppercase font-black tracking-widest"
+            >
+              <span>Suporte Técnico Direto</span>
+            </a>
+          </div>
+
+          <ProductModal 
+            product={selectedProduct} 
+            onClose={() => setSelectedProduct(null)} 
+          />
         </>
       )}
 
       {view === 'login' && (
         <AdminLogin 
-          onSuccess={() => { setIsAuthenticated(true); sessionStorage.setItem('pv_admin_auth', 'true'); setView('admin'); }} 
+          onSuccess={() => { setIsAuthenticated(true); setView('admin'); sessionStorage.setItem('pv_admin_auth', 'true'); }} 
           onCancel={() => setView('store')} 
         />
       )}
 
       {view === 'admin' && (
         <AdminDashboard 
-          onLogout={() => { setIsAuthenticated(false); sessionStorage.removeItem('pv_admin_auth'); setView('store'); }}
+          onLogout={() => { setIsAuthenticated(false); setView('store'); sessionStorage.removeItem('pv_admin_auth'); }} 
           onBack={() => setView('store')}
           onUpdate={handleAdminUpdate}
         />

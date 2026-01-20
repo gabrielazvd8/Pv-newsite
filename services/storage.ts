@@ -28,7 +28,7 @@ export const saveSubcategories = (data: Subcategory[]) => localStorage.setItem(S
 
 export const getProducts = (): Product[] => {
   const stored = localStorage.getItem(PRODUCTS_KEY);
-  return stored ? JSON.parse(stored) : [
+  const products: Product[] = stored ? JSON.parse(stored) : [
     {
       id: 'p1',
       name: "Manchester City Home 24/25",
@@ -36,16 +36,23 @@ export const getProducts = (): Product[] => {
       subcategoryId: 'sub1',
       image: "https://images.unsplash.com/photo-1622146924843-09405625c15e?auto=format&fit=crop&q=80&w=800",
       description: "Edição especial com detalhes em relevo.",
-      isProntaEntrega: true
+      isProntaEntrega: true,
+      isLancamento: true
     }
   ];
+  // Ensure backward compatibility for the new flag
+  return products.map(p => ({
+    ...p,
+    isLancamento: p.isLancamento ?? false
+  }));
 };
 
 export const saveProducts = (data: Product[]) => localStorage.setItem(PRODUCTS_KEY, JSON.stringify(data));
 
 export const getSettings = (): AppSettings => {
   const stored = localStorage.getItem(SETTINGS_KEY);
-  return stored ? JSON.parse(stored) : { prontaEntregaSectionActive: true };
+  const defaultSettings = { prontaEntregaSectionActive: true, lancamentoSectionActive: true };
+  return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
 };
 
 export const saveSettings = (settings: AppSettings) => localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));

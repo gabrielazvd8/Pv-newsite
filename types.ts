@@ -20,12 +20,14 @@ export interface Product {
   image: string;
   description: string;
   isProntaEntrega: boolean;
+  isLancamento: boolean; // New field for launch section
   featured?: boolean;
   price?: string; // Optional price for display
 }
 
 export interface AppSettings {
   prontaEntregaSectionActive: boolean;
+  lancamentoSectionActive: boolean; // New setting for visibility control
 }
 
 export type AppView = 'store' | 'admin' | 'login';
