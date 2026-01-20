@@ -61,9 +61,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       name: fd.get('name') as string,
       image: previewImage || editingItem?.image || ''
     };
+    
+    // Recarrega do storage para garantir lista atualizada antes do map/spread
+    const currentCats = storage.getCategories();
     const updated = editingItem 
-      ? categories.map(c => c.id === id ? newCat : c)
-      : [...categories, newCat];
+      ? currentCats.map(c => c.id === id ? newCat : c)
+      : [...currentCats, newCat];
     
     storage.saveCategories(updated);
     setCategories(updated);
@@ -73,7 +76,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
   const deleteCategory = (id: string) => {
     if (!confirm('Excluir categoria? Isso afetará subcategorias e produtos vinculados.')) return;
-    const updated = categories.filter(c => c.id !== id);
+    const currentCats = storage.getCategories();
+    const updated = currentCats.filter(c => c.id !== id);
     storage.saveCategories(updated);
     setCategories(updated);
     onUpdate();
@@ -89,9 +93,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       categoryId: fd.get('categoryId') as string,
       image: previewImage || editingItem?.image || ''
     };
+    
+    const currentSubs = storage.getSubcategories();
     const updated = editingItem 
-      ? subcategories.map(s => s.id === id ? newSub : s)
-      : [...subcategories, newSub];
+      ? currentSubs.map(s => s.id === id ? newSub : s)
+      : [...currentSubs, newSub];
     
     storage.saveSubcategories(updated);
     setSubcategories(updated);
@@ -101,7 +107,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
   const deleteSubcategory = (id: string) => {
     if (!confirm('Excluir subcategoria?')) return;
-    const updated = subcategories.filter(s => s.id !== id);
+    const currentSubs = storage.getSubcategories();
+    const updated = currentSubs.filter(s => s.id !== id);
     storage.saveSubcategories(updated);
     setSubcategories(updated);
     onUpdate();
@@ -122,9 +129,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       isLancamento: fd.get('isLancamento') === 'on'
     };
     
+    const currentProds = storage.getProducts();
     const updated = editingItem 
-      ? products.map(p => p.id === id ? item : p)
-      : [...products, item];
+      ? currentProds.map(p => p.id === id ? item : p)
+      : [...currentProds, item];
     
     storage.saveProducts(updated);
     setProducts(updated);
@@ -134,7 +142,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
   const deleteProduct = (id: string) => {
     if (!confirm('Excluir este produto permanentemente?')) return;
-    const updated = products.filter(p => p.id !== id);
+    const currentProds = storage.getProducts();
+    const updated = currentProds.filter(p => p.id !== id);
     storage.saveProducts(updated);
     setProducts(updated);
     onUpdate();
@@ -147,7 +156,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   };
 
   const toggleProductFlag = (id: string, flag: 'isProntaEntrega' | 'isLancamento') => {
-    const updated = products.map(p => p.id === id ? { ...p, [flag]: !p[flag] } : p);
+    const currentProds = storage.getProducts();
+    const updated = currentProds.map(p => p.id === id ? { ...p, [flag]: !p[flag] } : p);
     storage.saveProducts(updated);
     setProducts(updated);
     onUpdate();
@@ -200,7 +210,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                 {editingItem ? 'Editar Registro' : `Novo ${tab.replace('-', ' ')}`}
               </h2>
               
+              {/* key={editingItem?.id || tab} força o React a resetar o formulário quando o item editado mudar */}
               <form 
+                key={editingItem?.id || tab}
                 onSubmit={tab === 'products' ? handleSaveProduct : tab === 'categories' ? handleSaveCategory : handleSaveSubcategory} 
                 className="space-y-6"
               >
@@ -214,14 +226,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] uppercase font-black text-zinc-600 ml-2 tracking-widest">Categoria</label>
-                        <select name="categoryId" className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl outline-none focus:border-green-500" required>
-                          {categories.map(c => <option key={c.id} value={c.id} selected={editingItem?.categoryId === c.id}>{c.name}</option>)}
+                        <select name="categoryId" defaultValue={editingItem?.categoryId} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl outline-none focus:border-green-500" required>
+                          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] uppercase font-black text-zinc-600 ml-2 tracking-widest">Subcategoria</label>
-                        <select name="subcategoryId" className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl outline-none focus:border-green-500" required>
-                          {subcategories.map(s => <option key={s.id} value={s.id} selected={editingItem?.subcategoryId === s.id}>{s.name}</option>)}
+                        <select name="subcategoryId" defaultValue={editingItem?.subcategoryId} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl outline-none focus:border-green-500" required>
+                          {subcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
                       </div>
                     </div>
@@ -245,8 +257,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                 {tab === 'subcategories' && (
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase font-black text-zinc-600 ml-2 tracking-widest">Categoria Pai</label>
-                    <select name="categoryId" className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl outline-none focus:border-green-500" required>
-                      {categories.map(c => <option key={c.id} value={c.id} selected={editingItem?.categoryId === c.id}>{c.name}</option>)}
+                    <select name="categoryId" defaultValue={editingItem?.categoryId} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl outline-none focus:border-green-500" required>
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                 )}
