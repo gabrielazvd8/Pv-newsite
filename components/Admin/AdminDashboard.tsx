@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as storage from '../../services/storage';
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo } from '../../types';
+import { uploadImage } from '../../services/supabase';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -26,7 +27,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   });
   
   const [editingItem, setEditingItem] = useState<any>(null);
-  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [currentGallery, setCurrentGallery] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,13 +37,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     loadData();
   }, []);
 
-  const loadData = () => {
-    setProducts(storage.getProducts());
-    setCategories(storage.getCategories());
-    setSubcategories(storage.getSubcategories());
-    setCarouselImages(storage.getCarouselImages());
-    setLogos(storage.getLogos());
-    setSettings(storage.getSettings());
+  const loadData = async () => {
+    const [p, c, s, ci, l, sett] = await Promise.all([
+      storage.getProducts(),
+      storage.getCategories(),
+      storage.getSubcategories(),
+      storage.getCarouselImages(),
+      storage.getLogos(),
+      storage.getSettings()
+    ]);
+    
+    setProducts(p);
+    setCategories(c);
+    setSubcategories(s);
+    setCarouselImages(ci);
+    setLogos(l);
+    setSettings(sett);
   };
 
   const validateFile = (file: File) => {
@@ -56,47 +68,66 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     return true;
   };
 
-  const handleSingleFileChange = (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
-    const file = e.target.files?.[0];
-    if (!file || !validateFile(file)) return;
+  const handleMultiFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []) as File[];
+    if (files.length === 0) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      callback(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
+    setIsUploading(true);
+    
+    // Agora usamos PASTAS em vez de BUCKETS diferentes
+    let pasta = 'produtos';
+    let tipo: 'produto' | 'logo' | 'carrossel' = 'produto';
 
-  const handleMultiFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    files.forEach(file => {
-      if (!validateFile(file)) return;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImages(prev => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
+    if (tab === 'categories') pasta = 'categorias';
+    else if (tab === 'subcategories') pasta = 'subcategorias';
+    else if (subTab === 'logo') { pasta = 'logos'; tipo = 'logo'; }
+    else if (subTab === 'carousel') { pasta = 'carrossel'; tipo = 'carrossel'; }
+
+    for (const file of files) {
+      if (validateFile(file)) {
+        const url = await uploadImage(file, pasta, tipo);
+        if (url) {
+          if (tab === 'products') {
+            setCurrentGallery(prev => [...prev, url]);
+          } else {
+            setCurrentGallery([url]);
+          }
+        }
+      }
+    }
+    setIsUploading(false);
     if (e.target) e.target.value = '';
   };
 
-  const removePreviewImage = (index: number) => {
-    setPreviewImages(prev => prev.filter((_, i) => i !== index));
+  const removeImageFromGallery = (index: number) => {
+    setCurrentGallery(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSaveProduct = (e: any) => {
+  const setAsMainImage = (index: number) => {
+    setCurrentGallery(prev => {
+      const newGallery = [...prev];
+      const [selected] = newGallery.splice(index, 1);
+      return [selected, ...newGallery];
+    });
+  };
+
+  const handleSaveProduct = async (e: any) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const id = editingItem?.id || `prod_${Math.random().toString(36).substr(2, 9)}`;
     
-    // As imagens de preview agora compõem a galeria total
+    if (currentGallery.length === 0) {
+      alert('O produto deve ter pelo menos uma imagem principal.');
+      return;
+    }
+
     const item: Product = {
       id,
       name: fd.get('name') as string,
       categoryId: fd.get('categoryId') as string,
       subcategoryId: fd.get('subcategoryId') as string,
-      image: previewImages[0] || editingItem?.image || '', // A primeira é a principal
-      images: previewImages.length > 0 ? previewImages : (editingItem?.images || []),
+      image: currentGallery[0],
+      images: currentGallery,
       description: fd.get('description') as string,
       isProntaEntrega: fd.get('isProntaEntrega') === 'on',
       isLancamento: fd.get('isLancamento') === 'on',
@@ -105,39 +136,45 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       oldPrice: fd.get('oldPrice') as string
     };
 
-    if (!item.image) {
-      alert('O produto deve ter pelo menos uma imagem principal.');
-      return;
+    try {
+      await storage.saveProduct(item);
+      resetForm();
+      await loadData();
+      onUpdate();
+    } catch (err) {
+      alert("Erro ao salvar produto. Verifique sua conexão com o banco de dados.");
     }
-
-    const updated = editingItem 
-      ? products.map(p => p.id === id ? item : p)
-      : [...products, item];
-    storage.saveProducts(updated);
-    setProducts(updated);
-    resetForm();
-    onUpdate();
   };
 
-  const handleSaveCategory = (e: any) => {
+  const resetForm = () => {
+    setEditingItem(null);
+    setCurrentGallery([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (multiFileInputRef.current) multiFileInputRef.current.value = '';
+  };
+
+  const startEditingProduct = (p: Product) => {
+    setEditingItem(p);
+    setCurrentGallery(p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : []));
+    setTab('products');
+  };
+
+  const handleSaveCategory = async (e: any) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const id = editingItem?.id || `cat_${Math.random().toString(36).substr(2, 5)}`;
     const newCat: Category = {
       id,
       name: fd.get('name') as string,
-      image: previewImages[0] || editingItem?.image || ''
+      image: currentGallery[0] || editingItem?.image || ''
     };
-    const updated = editingItem 
-      ? categories.map(c => c.id === id ? newCat : c)
-      : [...categories, newCat];
-    storage.saveCategories(updated);
-    setCategories(updated);
+    await storage.saveCategories([newCat]);
     resetForm();
+    await loadData();
     onUpdate();
   };
 
-  const handleSaveSubcategory = (e: any) => {
+  const handleSaveSubcategory = async (e: any) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const id = editingItem?.id || `sub_${Math.random().toString(36).substr(2, 5)}`;
@@ -145,88 +182,75 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       id,
       name: fd.get('name') as string,
       categoryId: fd.get('categoryId') as string,
-      image: previewImages[0] || editingItem?.image || ''
+      image: currentGallery[0] || editingItem?.image || ''
     };
-    const updated = editingItem 
-      ? subcategories.map(s => s.id === id ? newSub : s)
-      : [...subcategories, newSub];
-    storage.saveSubcategories(updated);
-    setSubcategories(updated);
+    await storage.saveSubcategories([newSub]);
     resetForm();
+    await loadData();
     onUpdate();
   };
 
-  const handleSaveCarousel = (e: any) => {
+  const handleSaveCarousel = async (e: any) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const id = editingItem?.id || `slide_${Math.random().toString(36).substr(2, 9)}`;
     const item: CarouselImage = {
       id,
-      url: previewImages[0] || editingItem?.url || '',
+      url: currentGallery[0] || editingItem?.url || '',
       title: fd.get('title') as string,
       subtitle: fd.get('subtitle') as string,
       active: editingItem ? editingItem.active : true
     };
     if (!item.url) { alert('Selecione uma imagem.'); return; }
-    const updated = editingItem 
-      ? carouselImages.map(s => s.id === id ? item : s)
-      : [...carouselImages, item];
-    storage.saveCarouselImages(updated);
-    setCarouselImages(updated);
+    await storage.saveCarouselImages([item]);
     resetForm();
+    await loadData();
     onUpdate();
   };
 
-  const handleSaveLogo = (e: any) => {
+  const handleSaveLogo = async (e: any) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    if (previewImages.length === 0) { alert('Selecione uma imagem.'); return; }
+    if (currentGallery.length === 0) { alert('Selecione uma imagem.'); return; }
     const id = `logo_${Math.random().toString(36).substr(2, 9)}`;
     const item: Logo = {
       id,
-      url: previewImages[0],
+      url: currentGallery[0],
       name: fd.get('name') as string || 'Nova Logo'
     };
-    const updated = [...logos, item];
-    storage.saveLogos(updated);
-    setLogos(updated);
+    await storage.saveLogos([item]);
     resetForm();
+    await loadData();
     onUpdate();
   };
 
-  const selectActiveLogo = (id: string) => {
+  const selectActiveLogo = async (id: string) => {
     const newSettings = { ...settings, activeLogoId: id };
-    storage.saveSettings(newSettings);
+    await storage.saveSettings(newSettings);
     setSettings(newSettings);
     onUpdate();
   };
 
-  const resetForm = () => {
-    setEditingItem(null);
-    setPreviewImages([]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    if (multiFileInputRef.current) multiFileInputRef.current.value = '';
-  };
-
-  const toggleProductFlag = (id: string, flag: 'isProntaEntrega' | 'isLancamento' | 'isPromo') => {
-    const updated = products.map(p => p.id === id ? { ...p, [flag]: !p[flag] } : p);
-    storage.saveProducts(updated);
-    setProducts(updated);
+  const toggleProductFlag = async (id: string, flag: 'isProntaEntrega' | 'isLancamento' | 'isPromo') => {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    const updated = { ...product, [flag]: !product[flag] };
+    await storage.saveProduct(updated);
+    await loadData();
     onUpdate();
   };
 
-  const toggleSectionActive = (setting: keyof AppSettings) => {
+  const toggleSectionActive = async (setting: keyof AppSettings) => {
     const newSettings = { ...settings, [setting]: !settings[setting] };
-    storage.saveSettings(newSettings as AppSettings);
+    await storage.saveSettings(newSettings as AppSettings);
     setSettings(newSettings as AppSettings);
     onUpdate();
   };
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = async (id: string) => {
     if (!confirm('Excluir este produto permanentemente?')) return;
-    const updated = products.filter(p => p.id !== id);
-    storage.saveProducts(updated);
-    setProducts(updated);
+    await storage.deleteProduct(id);
+    await loadData();
     onUpdate();
   };
 
@@ -259,14 +283,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                 onClick={() => toggleProductFlag(p.id, flag)}
                 className={`p-4 border-2 rounded-[24px] cursor-pointer transition-all flex items-center gap-4 ${p[flag] ? (colorClass === 'red' ? 'bg-red-500/10 border-red-500/40 shadow-lg' : colorClass === 'green' ? 'bg-green-500/10 border-green-500/40 shadow-lg' : 'bg-zinc-100/10 border-zinc-500 shadow-lg') : 'bg-zinc-900/40 border-transparent hover:border-zinc-800'}`}
               >
-                <div className="relative">
-                  <img src={p.image} className="w-12 h-12 object-cover rounded-xl border border-zinc-800" alt="" />
-                  {p[flag] && (
-                    <div className={`absolute -top-1 -right-1 p-0.5 rounded-full ${colorClass === 'red' ? 'bg-red-500 text-white' : colorClass === 'green' ? 'bg-green-500 text-black' : 'bg-white text-black'}`}>
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>
-                    </div>
-                  )}
-                </div>
+                <img src={p.image} className="w-12 h-12 object-cover rounded-xl border border-zinc-800" alt="" />
                 <div className="flex-grow">
                    <h4 className={`text-[11px] font-black uppercase tracking-tight ${p[flag] ? 'text-white' : 'text-zinc-600'}`}>{p.name}</h4>
                    <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mt-0.5">
@@ -283,10 +300,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-black text-white">
+      {isUploading && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex flex-col items-center justify-center">
+          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-sm font-black uppercase tracking-widest animate-pulse">Sincronizando com Supabase Cloud...</p>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter">PV Admin <span className="text-green-500">PRO</span></h1>
-          <p className="text-zinc-500 text-[10px] uppercase tracking-[0.3em] mt-2">Gestão Premium de Ativos</p>
+          <p className="text-zinc-500 text-[10px] uppercase tracking-[0.3em] mt-2">Sincronizado com Nuvem</p>
         </div>
         <div className="flex gap-3">
           <button onClick={onBack} className="px-6 py-2 border border-zinc-800 text-[10px] uppercase font-black hover:bg-zinc-900 transition-all rounded-xl">Vitrine</button>
@@ -313,6 +337,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         
+        {/* Formulário Lado Esquerdo */}
         {tab !== 'settings' && (
           <div className="lg:col-span-5">
             <div className="bg-zinc-950 p-8 border border-zinc-900 rounded-[32px] sticky top-8 shadow-2xl">
@@ -323,8 +348,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
               
               <form key={editingItem?.id || tab} onSubmit={tab === 'products' ? handleSaveProduct : tab === 'categories' ? handleSaveCategory : handleSaveSubcategory} className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-black text-zinc-600 ml-2 tracking-widest">Nome / Título</label>
-                  <input type="text" name="name" placeholder="Ex: Real Madrid Home" defaultValue={editingItem?.name} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl focus:border-green-500 outline-none transition-all" required />
+                  <label className="text-[10px] uppercase font-black text-zinc-600 ml-2 tracking-widest">Nome do Item</label>
+                  <input type="text" name="name" placeholder="Ex: Brasil Home 2024" defaultValue={editingItem?.name} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl focus:border-green-500 outline-none transition-all" required />
                 </div>
 
                 {tab === 'products' && (
@@ -343,12 +368,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                       <div className="space-y-2">
                         <label className="text-[10px] uppercase font-black text-zinc-600 ml-2 tracking-widest">Categoria</label>
                         <select name="categoryId" defaultValue={editingItem?.categoryId} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl outline-none focus:border-green-500" required>
+                          <option value="">Selecione...</option>
                           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] uppercase font-black text-zinc-600 ml-2 tracking-widest">Subcategoria</label>
                         <select name="subcategoryId" defaultValue={editingItem?.subcategoryId} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl outline-none focus:border-green-500" required>
+                          <option value="">Selecione...</option>
                           {subcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
                       </div>
@@ -369,55 +396,66 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] uppercase font-black text-zinc-600 ml-2 tracking-widest">Descrição</label>
-                      <textarea name="description" placeholder="Detalhes técnicos..." defaultValue={editingItem?.description} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl h-24 outline-none focus:border-green-500"></textarea>
+                      <textarea name="description" placeholder="Detalhes da peça..." defaultValue={editingItem?.description} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-2xl h-24 outline-none focus:border-green-500"></textarea>
                     </div>
                   </>
                 )}
 
                 <div className="space-y-4">
-                  <label className="text-[10px] uppercase font-black text-zinc-600 ml-2 tracking-widest">Galeria de Mídias (Arraste ou clique)</label>
+                  <div className="flex items-center justify-between ml-2">
+                    <label className="text-[10px] uppercase font-black text-zinc-600 tracking-widest">Gerenciar Fotos (Storage)</label>
+                    <span className="text-[9px] text-zinc-700 font-bold uppercase">{currentGallery.length} Arquivos</span>
+                  </div>
+                  
                   <div 
                     onClick={() => multiFileInputRef.current?.click()} 
-                    className="w-full min-h-[160px] bg-black border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-green-500/50 transition-all p-6 text-center"
+                    className="w-full min-h-[140px] bg-black border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-green-500/50 transition-all p-6 group"
                   >
-                    <svg className="w-8 h-8 text-zinc-700 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
-                    <p className="text-[9px] uppercase font-black text-zinc-600 tracking-widest">Adicionar Fotos</p>
+                    <svg className="w-8 h-8 text-zinc-800 group-hover:text-green-500 transition-colors mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <p className="text-[9px] uppercase font-black text-zinc-700 group-hover:text-zinc-400 tracking-widest text-center px-4">Arraste ou clique para enviar à Nuvem</p>
                     <input 
                       type="file" 
                       ref={multiFileInputRef} 
                       onChange={handleMultiFileChange} 
                       className="hidden" 
-                      accept="image/*" 
-                      multiple 
+                      accept="image/jpeg,image/png,image/webp" 
+                      multiple={tab === 'products'}
                     />
                   </div>
                   
-                  {/* Grid de Previews */}
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
-                    {(editingItem?.images || []).concat(previewImages).filter((v, i, a) => a.indexOf(v) === i).map((img, idx) => (
-                      <div key={idx} className="relative aspect-square group rounded-xl overflow-hidden border border-zinc-800">
+                    {currentGallery.map((img, idx) => (
+                      <div key={idx} className={`relative aspect-square group rounded-xl overflow-hidden border-2 transition-all ${idx === 0 ? 'border-green-500 shadow-lg shadow-green-500/20' : 'border-zinc-800'}`}>
                         <img src={img} className="w-full h-full object-cover" alt="" />
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setPreviewImages(prev => prev.filter(p => p !== img));
-                            if (editingItem && editingItem.images) {
-                               setEditingItem({...editingItem, images: editingItem.images.filter((i: string) => i !== img)});
-                            }
-                          }}
-                          className="absolute inset-0 bg-red-600/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
+                        
+                        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {idx !== 0 && (
+                            <button 
+                              type="button"
+                              onClick={() => setAsMainImage(idx)}
+                              className="bg-white text-black text-[8px] font-black uppercase px-2 py-1 rounded hover:bg-green-500 transition-colors"
+                            >
+                              Fazer Capa
+                            </button>
+                          )}
+                          <button 
+                            type="button"
+                            onClick={() => removeImageFromGallery(idx)}
+                            className="bg-red-600 text-white p-1.5 rounded-full hover:bg-red-500 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
+
                         {idx === 0 && (
-                          <div className="absolute top-0 left-0 bg-green-500 text-black text-[7px] font-black px-1.5 py-0.5 uppercase">Capa</div>
+                          <div className="absolute top-0 left-0 bg-green-500 text-black text-[7px] font-black px-2 py-0.5 uppercase tracking-tighter">Capa</div>
                         )}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-6">
                   <button type="submit" className="flex-grow bg-green-500 text-black py-5 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-green-400 transition-all shadow-xl active:scale-95">Salvar Registro</button>
                   {editingItem && (
                     <button type="button" onClick={resetForm} className="bg-zinc-900 text-white px-6 py-5 rounded-2xl hover:bg-zinc-800 transition-all">
@@ -445,6 +483,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                   </button>
                 ))}
               </div>
+
               {subTab === 'sections' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {renderSectionManager('Promoção', 'promoSectionActive', 'isPromo', 'red')}
@@ -452,6 +491,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                   {renderSectionManager('Pronta Entrega', 'prontaEntregaSectionActive', 'isProntaEntrega', 'green')}
                 </div>
               )}
+
               {subTab === 'carousel' && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                   <div className="lg:col-span-4">
@@ -461,27 +501,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                          <input type="text" name="title" placeholder="Título" className="w-full bg-black border border-zinc-800 p-3 text-xs rounded-xl focus:border-green-500 outline-none" />
                          <input type="text" name="subtitle" placeholder="Subtítulo" className="w-full bg-black border border-zinc-800 p-3 text-xs rounded-xl focus:border-green-500 outline-none" />
                          <div onClick={() => fileInputRef.current?.click()} className="aspect-video bg-black border-2 border-dashed border-zinc-800 rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden relative group">
-                            {previewImages[0] ? <img src={previewImages[0]} className="w-full h-full object-cover" /> : <span className="text-[9px] uppercase font-black text-zinc-600">Upload Imagem</span>}
-                            <input type="file" ref={fileInputRef} onChange={(e) => handleSingleFileChange(e, (url) => setPreviewImages([url]))} className="hidden" accept="image/*" />
+                            {currentGallery[0] ? <img src={currentGallery[0]} className="w-full h-full object-cover" /> : <span className="text-[9px] uppercase font-black text-zinc-600">Upload Imagem</span>}
+                            <input type="file" ref={fileInputRef} onChange={handleMultiFileChange} className="hidden" accept="image/*" />
                          </div>
-                         <button type="submit" className="w-full bg-green-500 text-black py-4 text-[10px] font-black uppercase rounded-xl">Adicionar</button>
+                         <button type="submit" className="w-full bg-green-500 text-black py-4 text-[10px] font-black uppercase rounded-xl active:scale-95 transition-all">Adicionar</button>
                        </form>
                     </div>
                   </div>
                   <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {carouselImages.map(img => (
-                      <div key={img.id} className={`group bg-zinc-950 border border-zinc-900 rounded-[32px] overflow-hidden p-4 transition-all ${!img.active ? 'opacity-40 grayscale' : 'hover:border-green-500/30'}`}>
+                      <div key={img.id} className="group bg-zinc-950 border border-zinc-900 rounded-[32px] overflow-hidden p-4">
                          <div className="aspect-video rounded-2xl overflow-hidden mb-4 relative">
                             <img src={img.url} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                                <button onClick={() => {
-                                 const updated = carouselImages.map(s => s.id === img.id ? { ...s, active: !s.active } : s);
-                                 storage.saveCarouselImages(updated);
-                                 setCarouselImages(updated);
-                                 onUpdate();
-                               }} className="p-2 bg-zinc-800 text-green-500 rounded-full hover:bg-green-500 hover:text-black">
-                                 {img.active ? 'Ativo' : 'Inativo'}
-                               </button>
+                                 setEditingItem(img);
+                                 setCurrentGallery([img.url]);
+                               }} className="p-2 bg-green-500 text-black rounded-full hover:scale-110 transition-transform">Editar</button>
                             </div>
                          </div>
                          <h4 className="text-xs font-black uppercase">{img.title}</h4>
@@ -490,6 +526,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                   </div>
                 </div>
               )}
+
               {subTab === 'logo' && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                   <div className="lg:col-span-4">
@@ -498,20 +535,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                        <form onSubmit={handleSaveLogo} className="space-y-4">
                          <input type="text" name="name" placeholder="Apelido" className="w-full bg-black border border-zinc-800 p-3 text-xs rounded-xl outline-none" required />
                          <div onClick={() => fileInputRef.current?.click()} className="aspect-square bg-black border-2 border-dashed border-zinc-800 rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden relative">
-                            {previewImages[0] ? <img src={previewImages[0]} className="w-full h-full object-contain p-4" /> : <span className="text-[9px] uppercase font-black text-zinc-600">Upload</span>}
-                            <input type="file" ref={fileInputRef} onChange={(e) => handleSingleFileChange(e, (url) => setPreviewImages([url]))} className="hidden" accept="image/*" />
+                            {currentGallery[0] ? <img src={currentGallery[0]} className="w-full h-full object-contain p-4" /> : <span className="text-[9px] uppercase font-black text-zinc-600">Upload</span>}
+                            <input type="file" ref={fileInputRef} onChange={handleMultiFileChange} className="hidden" accept="image/*" />
                          </div>
-                         <button type="submit" className="w-full bg-green-500 text-black py-4 text-[10px] font-black uppercase rounded-xl">Salvar</button>
+                         <button type="submit" className="w-full bg-green-500 text-black py-4 text-[10px] font-black uppercase rounded-xl active:scale-95 transition-all">Salvar Logo</button>
                        </form>
                     </div>
                   </div>
                   <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-6">
                     {logos.map(l => (
-                      <div key={l.id} className={`bg-zinc-950 border-2 p-6 rounded-[32px] transition-all relative text-center ${settings.activeLogoId === l.id ? 'border-green-500' : 'border-zinc-900'}`}>
+                      <div key={l.id} className={`bg-zinc-950 border-2 p-6 rounded-[32px] transition-all relative text-center ${settings.activeLogoId === l.id ? 'border-green-500 shadow-lg shadow-green-500/10' : 'border-zinc-900'}`}>
                          <div className="h-24 flex items-center justify-center mb-6">
                             <img src={l.url} className="max-h-full max-w-full object-contain" />
                          </div>
-                         <button onClick={() => selectActiveLogo(l.id)} disabled={settings.activeLogoId === l.id} className={`w-full py-2 text-[8px] font-black uppercase rounded-lg ${settings.activeLogoId === l.id ? 'bg-zinc-900 text-zinc-600' : 'bg-white text-black hover:bg-green-500'}`}>
+                         <button onClick={() => selectActiveLogo(l.id)} disabled={settings.activeLogoId === l.id} className={`w-full py-2 text-[8px] font-black uppercase rounded-lg ${settings.activeLogoId === l.id ? 'bg-zinc-900 text-zinc-600' : 'bg-white text-black hover:bg-green-500 transition-colors'}`}>
                            {settings.activeLogoId === l.id ? 'Ativa' : 'Ativar'}
                          </button>
                       </div>
@@ -522,6 +559,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             </div>
           )}
 
+          {/* Listagens */}
           {tab !== 'settings' && (
             <div className="max-h-[80vh] overflow-y-auto pr-2 space-y-4 no-scrollbar">
               {tab === 'products' && products.map(p => (
@@ -536,15 +574,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                     <div>
                       <h4 className="text-sm font-bold uppercase tracking-tight flex items-center gap-2">
                         {p.name}
-                        {p.isPromo && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" title="Promoção"></span>}
+                        {p.isPromo && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
                       </h4>
                       <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mt-1">
-                        {categories.find(c => c.id === p.categoryId)?.name} • {subcategories.find(s => s.id === p.subcategoryId)?.name}
+                        {categories.find(c => c.id === p.categoryId)?.name || 'S/ Cat'} • {subcategories.find(s => s.id === p.subcategoryId)?.name || 'S/ Sub'}
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => { setEditingItem(p); setPreviewImages(p.images || []); }} className="p-3 text-zinc-500 hover:text-white bg-zinc-900/50 rounded-xl transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                    <button onClick={() => startEditingProduct(p)} className="p-3 text-zinc-500 hover:text-white bg-zinc-900/50 rounded-xl transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
                     <button onClick={() => deleteProduct(p.id)} className="p-3 text-zinc-500 hover:text-red-500 bg-zinc-900/50 rounded-xl transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                   </div>
                 </div>
@@ -559,24 +597,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                     <h4 className="text-sm font-bold uppercase tracking-widest">{c.name}</h4>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => { setEditingItem(c); setPreviewImages([c.image]); }} className="p-3 text-zinc-500 hover:text-white bg-zinc-900/50 rounded-xl"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                  </div>
-                </div>
-              ))}
-
-              {tab === 'subcategories' && subcategories.map(s => (
-                <div key={s.id} className="bg-zinc-950 p-4 border border-zinc-900 rounded-3xl flex items-center justify-between group shadow-md hover:border-zinc-700 transition-all">
-                  <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden border border-zinc-800">
-                      <img src={s.image || 'https://placehold.co/400x400/18181b/fafafa?text=PV'} className="w-full h-full object-cover" alt="" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold uppercase">{s.name}</h4>
-                      <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Pertence a: {categories.find(c => c.id === s.categoryId)?.name}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => { setEditingItem(s); setPreviewImages([s.image]); }} className="p-3 text-zinc-500 hover:text-white bg-zinc-900/50 rounded-xl"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                    <button onClick={() => { setEditingItem(c); setCurrentGallery([c.image]); }} className="p-3 text-zinc-500 hover:text-white bg-zinc-900/50 rounded-xl"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
                   </div>
                 </div>
               ))}

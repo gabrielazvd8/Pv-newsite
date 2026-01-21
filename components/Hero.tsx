@@ -8,16 +8,11 @@ const Hero: React.FC = () => {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    const loadSlides = () => {
-      const data = storage.getCarouselImages();
+    const loadSlides = async () => {
+      const data = await storage.getCarouselImages();
       setSlides(data);
     };
     loadSlides();
-    
-    // Listen for storage changes if necessary
-    const handleUpdate = () => loadSlides();
-    window.addEventListener('storage', handleUpdate);
-    return () => window.removeEventListener('storage', handleUpdate);
   }, []);
 
   const activeSlides = useMemo(() => slides.filter(s => s.active), [slides]);
@@ -37,7 +32,6 @@ const Hero: React.FC = () => {
           key={slide.id}
           className={`absolute inset-0 transition-all duration-[1.5s] ease-in-out ${i === current ? 'opacity-100 scale-100' : 'opacity-0 scale-110'}`}
         >
-          {/* Enhanced Gradients for Luxury Look */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
           
@@ -66,8 +60,6 @@ const Hero: React.FC = () => {
           </div>
         </div>
       ))}
-      
-      {/* Down Arrow Indicator */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-40">
         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

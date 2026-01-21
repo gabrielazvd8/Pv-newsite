@@ -1,89 +1,85 @@
 
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo } from '../types';
+import { supabase } from './supabase';
 
-const PRODUCTS_KEY = 'pv_products_v2';
-const CATEGORIES_KEY = 'pv_categories_v2';
-const SUBCATEGORIES_KEY = 'pv_subcategories_v2';
-const SETTINGS_KEY = 'pv_settings_v2';
-const CAROUSEL_KEY = 'pv_carousel_v2';
-const LOGOS_KEY = 'pv_logos_v2';
-
-export const getCategories = (): Category[] => {
-  const stored = localStorage.getItem(CATEGORIES_KEY);
-  return stored ? JSON.parse(stored) : [
-    { id: 'cat1', name: 'Futebol Europeu', image: 'https://images.unsplash.com/photo-1543351611-58f69d7c1781?q=80&w=400' },
-    { id: 'cat2', name: 'Brasileirão', image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=400' }
-  ];
+export const getCategories = async (): Promise<Category[]> => {
+  const { data, error } = await supabase.from('categories').select('*').order('name');
+  if (error) return [];
+  return data as Category[];
 };
 
-export const saveCategories = (data: Category[]) => localStorage.setItem(CATEGORIES_KEY, JSON.stringify(data));
-
-export const getSubcategories = (): Subcategory[] => {
-  const stored = localStorage.getItem(SUBCATEGORIES_KEY);
-  return stored ? JSON.parse(stored) : [
-    { id: 'sub1', name: 'Premier League', categoryId: 'cat1', image: '' },
-    { id: 'sub2', name: 'Série A', categoryId: 'cat2', image: '' }
-  ];
+export const saveCategories = async (data: Category[]) => {
+  await supabase.from('categories').upsert(data);
 };
 
-export const saveSubcategories = (data: Subcategory[]) => localStorage.setItem(SUBCATEGORIES_KEY, JSON.stringify(data));
+export const getSubcategories = async (): Promise<Subcategory[]> => {
+  const { data, error } = await supabase.from('subcategories').select('*').order('name');
+  if (error) return [];
+  return data as Subcategory[];
+};
 
-export const getProducts = (): Product[] => {
-  const stored = localStorage.getItem(PRODUCTS_KEY);
-  const products: any[] = stored ? JSON.parse(stored) : [];
-  return products.map(p => ({
+export const saveSubcategories = async (data: Subcategory[]) => {
+  await supabase.from('subcategories').upsert(data);
+};
+
+export const getProducts = async (): Promise<Product[]> => {
+  const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+  if (error) return [];
+  return (data as any[]).map(p => ({
     ...p,
     isLancamento: p.isLancamento ?? false,
     isPromo: p.isPromo ?? false,
     isProntaEntrega: p.isProntaEntrega ?? false,
-    images: p.images || (p.image ? [p.image] : [])
-  }));
+    images: Array.isArray(p.images) ? p.images : (p.image ? [p.image] : [])
+  })) as Product[];
 };
 
-export const saveProducts = (data: Product[]) => localStorage.setItem(PRODUCTS_KEY, JSON.stringify(data));
-
-export const getCarouselImages = (): CarouselImage[] => {
-  const stored = localStorage.getItem(CAROUSEL_KEY);
-  const defaultCarousel = [
-    { 
-      id: 'h1',
-      url: 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=1200', 
-      title: 'LEGADO EUROPEU',
-      subtitle: 'COLEÇÃO 24/25',
-      active: true
-    },
-    { 
-      id: 'h2',
-      url: 'https://images.unsplash.com/photo-1511886929837-354d827aae26?q=80&w=1200', 
-      title: 'SELEÇÕES DE ELITE',
-      subtitle: 'O MUNDO EM CAMPO',
-      active: true
-    }
-  ];
-  return stored ? JSON.parse(stored) : defaultCarousel;
+export const saveProducts = async (data: Product[]) => {
+  // Upsert sincroniza o estado local com o remoto
+  await supabase.from('products').upsert(data);
 };
 
-export const saveCarouselImages = (data: CarouselImage[]) => localStorage.setItem(CAROUSEL_KEY, JSON.stringify(data));
-
-export const getLogos = (): Logo[] => {
-  const stored = localStorage.getItem(LOGOS_KEY);
-  const defaultLogos = [
-    { id: 'default', url: 'assets/img/IMG_3069.PNG', name: 'Logo Padrão' }
-  ];
-  return stored ? JSON.parse(stored) : defaultLogos;
+export const saveProduct = async (product: Product) => {
+  const { error } = await supabase.from('products').upsert(product);
+  if (error) throw error;
 };
 
-export const saveLogos = (data: Logo[]) => localStorage.setItem(LOGOS_KEY, JSON.stringify(data));
+export const deleteProduct = async (id: string) => {
+  await supabase.from('products').delete().eq('id', id);
+};
 
-export const getSettings = (): AppSettings => {
-  const stored = localStorage.getItem(SETTINGS_KEY);
+export const getCarouselImages = async (): Promise<CarouselImage[]> => {
+  const { data, error } = await supabase.from('carousel').select('*');
+  if (error) return [];
+  return data as CarouselImage[];
+};
+
+export const saveCarouselImages = async (data: CarouselImage[]) => {
+  await supabase.from('carousel').upsert(data);
+};
+
+export const getLogos = async (): Promise<Logo[]> => {
+  const { data, error } = await supabase.from('logos').select('*');
+  if (error) return [];
+  return data as Logo[];
+};
+
+export const saveLogos = async (data: Logo[]) => {
+  await supabase.from('logos').upsert(data);
+};
+
+export const getSettings = async (): Promise<AppSettings> => {
+  const { data, error } = await supabase.from('settings').select('*').single();
   const defaultSettings: AppSettings = { 
     promoSectionActive: false,
     prontaEntregaSectionActive: true, 
     lancamentoSectionActive: true,
     activeLogoId: 'default'
   };
-  return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
+  if (error || !data) return defaultSettings;
+  return { ...defaultSettings, ...data } as AppSettings;
 };
 
-export const saveSettings = (settings: AppSettings) => localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+export const saveSettings = async (settings: AppSettings) => {
+  await supabase.from('settings').upsert({ id: 1, ...settings });
+};

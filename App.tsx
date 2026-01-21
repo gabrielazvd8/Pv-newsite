@@ -44,13 +44,20 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const loadAppData = () => {
-    setProducts(storage.getProducts());
-    setCategories(storage.getCategories());
-    setSubcategories(storage.getSubcategories());
-    const s = storage.getSettings();
-    setSettings(s);
-    setLogos(storage.getLogos());
+  const loadAppData = async () => {
+    const [p, c, s, sett, l] = await Promise.all([
+      storage.getProducts(),
+      storage.getCategories(),
+      storage.getSubcategories(),
+      storage.getSettings(),
+      storage.getLogos()
+    ]);
+    
+    setProducts(p);
+    setCategories(c);
+    setSubcategories(s);
+    setSettings(sett);
+    setLogos(l);
   };
 
   const activeLogo = useMemo(() => {
@@ -113,10 +120,9 @@ const App: React.FC = () => {
               />
             </div>
 
-            {/* SEÇÕES ESPECIAIS (Apenas na Home sem filtros ativos) */}
+            {/* SEÇÕES ESPECIAIS */}
             {!isBrowsing && (
               <div className="space-y-0">
-                {/* 1. Promoção */}
                 {settings.promoSectionActive && promoProducts.length > 0 && (
                   <section className="bg-red-600/5 border-y border-red-500/20 py-24">
                     <div className="container mx-auto px-4">
@@ -137,7 +143,6 @@ const App: React.FC = () => {
                   </section>
                 )}
 
-                {/* 2. Lançamento */}
                 {settings.lancamentoSectionActive && lancamentoProducts.length > 0 && (
                   <section className="bg-zinc-950/50 border-b border-zinc-900 py-24">
                     <div className="container mx-auto px-4">
@@ -158,7 +163,6 @@ const App: React.FC = () => {
                   </section>
                 )}
 
-                {/* 3. Pronta Entrega */}
                 {settings.prontaEntregaSectionActive && prontaEntregaProducts.length > 0 && (
                   <section className="bg-zinc-950 border-b border-zinc-900 py-24">
                     <div className="container mx-auto px-4">
@@ -181,7 +185,6 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Vitrine Principal / Resultados de Busca */}
             <section className="container mx-auto px-4 py-24">
               <div className="flex items-center justify-between mb-12">
                 <h2 className="text-3xl font-black uppercase tracking-tighter border-l-8 border-green-500 pl-6">
@@ -222,7 +225,7 @@ const App: React.FC = () => {
                <img src={activeLogo?.url || "assets/img/IMG_3069.PNG"} alt="PV Sports" className="h-20" />
             </div>
             <div className="flex justify-center gap-12 mb-16">
-              {['Instagram', 'WhatsApp', 'Suporte VIP'].map(item => (
+              {['Instagram', 'WhatsApp'].map(item => (
                 <span key={item} className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 hover:text-green-500 cursor-pointer transition-all hover:tracking-[0.4em] font-black">
                   {item}
                 </span>
@@ -242,7 +245,7 @@ const App: React.FC = () => {
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 text-[10px] text-zinc-600 hover:text-green-500 transition-colors uppercase font-black tracking-widest"
             >
-              <span>Suporte Técnico Direto</span>
+              <span>Desenvolvido por AZVD.AI - Desenvolvedor: Gabriel Azevedo</span>
             </a>
           </div>
 
