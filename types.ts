@@ -42,10 +42,18 @@ export interface Logo {
   name: string;
 }
 
+export interface TeamPVItem {
+  id: string;
+  name: string;
+  image: string;
+  verified: boolean;
+}
+
 export interface AppSettings {
   promoSectionActive: boolean;
   prontaEntregaSectionActive: boolean;
   lancamentoSectionActive: boolean;
+  teamPVSectionActive: boolean;
   activeLogoId: string;
 }
 

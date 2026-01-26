@@ -1,85 +1,176 @@
 
-import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo } from '../types';
-import { supabase } from './supabase';
+import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem } from '../types';
 
+// Chaves para simular os arquivos JSON
+const KEYS = {
+  CATEGORIAS: 'pv_data_categorias',
+  SUBCATEGORIAS: 'pv_data_subcategorias',
+  PRODUTOS: 'pv_data_produtos',
+  CARROSSEL: 'pv_data_carrossel',
+  SETTINGS: 'pv_data_configuracoes',
+  LOGOS: 'pv_data_logos',
+  TEAMPV: 'pv_data_teampv'
+};
+
+// Funções Auxiliares de Persistência
+const getLocal = <T>(key: string, defaultValue: T): T => {
+  const data = localStorage.getItem(key);
+  if (!data) return defaultValue;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return defaultValue;
+  }
+};
+
+const setLocal = (key: string, data: any) => {
+  localStorage.setItem(key, JSON.stringify(data));
+};
+
+// --- CATEGORIAS ---
 export const getCategories = async (): Promise<Category[]> => {
-  const { data, error } = await supabase.from('categories').select('*').order('name');
-  if (error) return [];
-  return data as Category[];
+  return getLocal<Category[]>(KEYS.CATEGORIAS, []);
 };
 
 export const saveCategories = async (data: Category[]) => {
-  await supabase.from('categories').upsert(data);
+  const current = await getCategories();
+  const updated = [...current];
+  data.forEach(newItem => {
+    const idx = updated.findIndex(item => item.id === newItem.id);
+    if (idx >= 0) updated[idx] = newItem;
+    else updated.push(newItem);
+  });
+  setLocal(KEYS.CATEGORIAS, updated);
 };
 
+// --- SUBCATEGORIAS ---
 export const getSubcategories = async (): Promise<Subcategory[]> => {
-  const { data, error } = await supabase.from('subcategories').select('*').order('name');
-  if (error) return [];
-  return data as Subcategory[];
+  return getLocal<Subcategory[]>(KEYS.SUBCATEGORIAS, []);
 };
 
 export const saveSubcategories = async (data: Subcategory[]) => {
-  await supabase.from('subcategories').upsert(data);
+  const current = await getSubcategories();
+  const updated = [...current];
+  data.forEach(newItem => {
+    const idx = updated.findIndex(item => item.id === newItem.id);
+    if (idx >= 0) updated[idx] = newItem;
+    else updated.push(newItem);
+  });
+  setLocal(KEYS.SUBCATEGORIAS, updated);
 };
 
+// --- PRODUTOS ---
 export const getProducts = async (): Promise<Product[]> => {
-  const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-  if (error) return [];
-  return (data as any[]).map(p => ({
-    ...p,
-    isLancamento: p.isLancamento ?? false,
-    isPromo: p.isPromo ?? false,
-    isProntaEntrega: p.isProntaEntrega ?? false,
-    images: Array.isArray(p.images) ? p.images : (p.image ? [p.image] : [])
-  })) as Product[];
+  return getLocal<Product[]>(KEYS.PRODUTOS, []);
 };
 
 export const saveProducts = async (data: Product[]) => {
-  // Upsert sincroniza o estado local com o remoto
-  await supabase.from('products').upsert(data);
+  const current = await getProducts();
+  const updated = [...current];
+  data.forEach(newItem => {
+    const idx = updated.findIndex(item => item.id === newItem.id);
+    if (idx >= 0) updated[idx] = newItem;
+    else updated.push(newItem);
+  });
+  setLocal(KEYS.PRODUTOS, updated);
 };
 
 export const saveProduct = async (product: Product) => {
-  const { error } = await supabase.from('products').upsert(product);
-  if (error) throw error;
+  const products = await getProducts();
+  const idx = products.findIndex(p => p.id === product.id);
+  if (idx >= 0) {
+    products[idx] = product;
+  } else {
+    products.unshift(product);
+  }
+  setLocal(KEYS.PRODUTOS, products);
 };
 
 export const deleteProduct = async (id: string) => {
-  await supabase.from('products').delete().eq('id', id);
+  const products = await getProducts();
+  const filtered = products.filter(p => p.id !== id);
+  setLocal(KEYS.PRODUTOS, filtered);
 };
 
+// --- CARROSSEL ---
 export const getCarouselImages = async (): Promise<CarouselImage[]> => {
-  const { data, error } = await supabase.from('carousel').select('*');
-  if (error) return [];
-  return data as CarouselImage[];
+  return getLocal<CarouselImage[]>(KEYS.CARROSSEL, []);
 };
 
 export const saveCarouselImages = async (data: CarouselImage[]) => {
-  await supabase.from('carousel').upsert(data);
+  const current = await getCarouselImages();
+  const updated = [...current];
+  data.forEach(newItem => {
+    const idx = updated.findIndex(item => item.id === newItem.id);
+    if (idx >= 0) updated[idx] = newItem;
+    else updated.push(newItem);
+  });
+  setLocal(KEYS.CARROSSEL, updated);
 };
 
+// --- LOGOS ---
 export const getLogos = async (): Promise<Logo[]> => {
-  const { data, error } = await supabase.from('logos').select('*');
-  if (error) return [];
-  return data as Logo[];
+  return getLocal<Logo[]>(KEYS.LOGOS, []);
 };
 
 export const saveLogos = async (data: Logo[]) => {
-  await supabase.from('logos').upsert(data);
+  const current = await getLogos();
+  const updated = [...current];
+  data.forEach(newItem => {
+    const idx = updated.findIndex(item => item.id === newItem.id);
+    if (idx >= 0) updated[idx] = newItem;
+    else updated.push(newItem);
+  });
+  setLocal(KEYS.LOGOS, updated);
 };
 
+// --- TEAM PV ---
+export const getTeamPVItems = async (): Promise<TeamPVItem[]> => {
+  return getLocal<TeamPVItem[]>(KEYS.TEAMPV, []);
+};
+
+export const saveTeamPVItem = async (item: TeamPVItem) => {
+  const items = await getTeamPVItems();
+  const idx = items.findIndex(i => i.id === item.id);
+  if (idx >= 0) {
+    items[idx] = item;
+  } else {
+    items.push(item);
+  }
+  setLocal(KEYS.TEAMPV, items);
+};
+
+export const deleteTeamPVItem = async (id: string) => {
+  const items = await getTeamPVItems();
+  const filtered = items.filter(i => i.id !== id);
+  setLocal(KEYS.TEAMPV, filtered);
+};
+
+// --- CONFIGURAÇÕES ---
 export const getSettings = async (): Promise<AppSettings> => {
-  const { data, error } = await supabase.from('settings').select('*').single();
   const defaultSettings: AppSettings = { 
     promoSectionActive: false,
     prontaEntregaSectionActive: true, 
     lancamentoSectionActive: true,
+    teamPVSectionActive: false,
     activeLogoId: 'default'
   };
-  if (error || !data) return defaultSettings;
-  return { ...defaultSettings, ...data } as AppSettings;
+  return getLocal<AppSettings>(KEYS.SETTINGS, defaultSettings);
 };
 
 export const saveSettings = async (settings: AppSettings) => {
-  await supabase.from('settings').upsert({ id: 1, ...settings });
+  setLocal(KEYS.SETTINGS, settings);
+};
+
+/**
+ * Utilitário para simular upload local transformando arquivos em Base64
+ * Nomeia o arquivo com timestamp para garantir unicidade
+ */
+export const uploadLocalFile = async (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 };

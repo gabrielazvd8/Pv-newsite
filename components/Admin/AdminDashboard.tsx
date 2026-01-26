@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import * as storage from '../../services/storage';
-import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo } from '../../types';
-import { uploadImage } from '../../services/supabase';
+import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem } from '../../types';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -12,17 +11,19 @@ interface AdminDashboardProps {
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpdate }) => {
   const [tab, setTab] = useState<'products' | 'categories' | 'subcategories' | 'settings'>('products');
-  const [subTab, setSubTab] = useState<'sections' | 'carousel' | 'logo'>('sections');
+  const [subTab, setSubTab] = useState<'sections' | 'carousel' | 'logo' | 'teampv'>('sections');
   
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [carouselImages, setCarouselImages] = useState<CarouselImage[]>([]);
   const [logos, setLogos] = useState<Logo[]>([]);
+  const [teamPVItems, setTeamPVItems] = useState<TeamPVItem[]>([]);
   const [settings, setSettings] = useState<AppSettings>({ 
     promoSectionActive: false,
     prontaEntregaSectionActive: true, 
     lancamentoSectionActive: true,
+    teamPVSectionActive: false,
     activeLogoId: 'default'
   });
   
@@ -38,13 +39,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   }, []);
 
   const loadData = async () => {
-    const [p, c, s, ci, l, sett] = await Promise.all([
+    const [p, c, s, ci, l, sett, tpv] = await Promise.all([
       storage.getProducts(),
       storage.getCategories(),
       storage.getSubcategories(),
       storage.getCarouselImages(),
       storage.getLogos(),
-      storage.getSettings()
+      storage.getSettings(),
+      storage.getTeamPVItems()
     ]);
     
     setProducts(p);
@@ -53,6 +55,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     setCarouselImages(ci);
     setLogos(l);
     setSettings(sett);
+    setTeamPVItems(tpv);
   };
 
   const validateFile = (file: File) => {
@@ -74,24 +77,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
     setIsUploading(true);
     
-    // Agora usamos PASTAS em vez de BUCKETS diferentes
-    let pasta = 'produtos';
-    let tipo: 'produto' | 'logo' | 'carrossel' = 'produto';
-
-    if (tab === 'categories') pasta = 'categorias';
-    else if (tab === 'subcategories') pasta = 'subcategorias';
-    else if (subTab === 'logo') { pasta = 'logos'; tipo = 'logo'; }
-    else if (subTab === 'carousel') { pasta = 'carrossel'; tipo = 'carrossel'; }
-
     for (const file of files) {
       if (validateFile(file)) {
-        const url = await uploadImage(file, pasta, tipo);
-        if (url) {
+        try {
+          const url = await storage.uploadLocalFile(file);
           if (tab === 'products') {
             setCurrentGallery(prev => [...prev, url]);
           } else {
             setCurrentGallery([url]);
           }
+        } catch (err) {
+          console.error("Erro no processamento da imagem:", err);
         }
       }
     }
@@ -114,7 +110,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const handleSaveProduct = async (e: any) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const id = editingItem?.id || `prod_${Math.random().toString(36).substr(2, 9)}`;
+    const id = editingItem?.id || `prod_${Date.now()}`;
     
     if (currentGallery.length === 0) {
       alert('O produto deve ter pelo menos uma imagem principal.');
@@ -136,14 +132,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       oldPrice: fd.get('oldPrice') as string
     };
 
-    try {
-      await storage.saveProduct(item);
-      resetForm();
-      await loadData();
-      onUpdate();
-    } catch (err) {
-      alert("Erro ao salvar produto. Verifique sua conexão com o banco de dados.");
-    }
+    await storage.saveProduct(item);
+    resetForm();
+    await loadData();
+    onUpdate();
   };
 
   const resetForm = () => {
@@ -162,7 +154,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const handleSaveCategory = async (e: any) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const id = editingItem?.id || `cat_${Math.random().toString(36).substr(2, 5)}`;
+    const id = editingItem?.id || `cat_${Date.now()}`;
     const newCat: Category = {
       id,
       name: fd.get('name') as string,
@@ -177,7 +169,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const handleSaveSubcategory = async (e: any) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const id = editingItem?.id || `sub_${Math.random().toString(36).substr(2, 5)}`;
+    const id = editingItem?.id || `sub_${Date.now()}`;
     const newSub: Subcategory = {
       id,
       name: fd.get('name') as string,
@@ -193,7 +185,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const handleSaveCarousel = async (e: any) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const id = editingItem?.id || `slide_${Math.random().toString(36).substr(2, 9)}`;
+    const id = editingItem?.id || `slide_${Date.now()}`;
     const item: CarouselImage = {
       id,
       url: currentGallery[0] || editingItem?.url || '',
@@ -212,13 +204,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     e.preventDefault();
     const fd = new FormData(e.target);
     if (currentGallery.length === 0) { alert('Selecione uma imagem.'); return; }
-    const id = `logo_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `logo_${Date.now()}`;
     const item: Logo = {
       id,
       url: currentGallery[0],
       name: fd.get('name') as string || 'Nova Logo'
     };
     await storage.saveLogos([item]);
+    resetForm();
+    await loadData();
+    onUpdate();
+  };
+
+  const handleSaveTeamPV = async (e: any) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    if (currentGallery.length === 0) { alert('Selecione uma imagem.'); return; }
+    const id = editingItem?.id || `tpv_${Date.now()}`;
+    const item: TeamPVItem = {
+      id,
+      name: fd.get('name') as string,
+      image: currentGallery[0],
+      verified: true
+    };
+    await storage.saveTeamPVItem(item);
     resetForm();
     await loadData();
     onUpdate();
@@ -254,7 +263,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     onUpdate();
   };
 
-  const renderSectionManager = (title: string, settingKey: keyof AppSettings, flag: 'isPromo' | 'isLancamento' | 'isProntaEntrega', colorClass: string) => {
+  const deleteTeamPVItem = async (id: string) => {
+    if (!confirm('Remover este item do Team PV?')) return;
+    await storage.deleteTeamPVItem(id);
+    await loadData();
+    onUpdate();
+  };
+
+  const renderSectionManager = (title: string, settingKey: keyof AppSettings, flag?: string, colorClass: string = 'zinc') => {
     const isActive = settings[settingKey];
     return (
       <div className={`bg-zinc-950 p-8 border-2 rounded-[40px] transition-all flex flex-col h-full ${isActive ? `border-${colorClass}-500/30 shadow-2xl` : 'border-zinc-900'}`}>
@@ -271,29 +287,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
           </button>
         </div>
 
-        <div className="flex flex-col flex-grow">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-[10px] uppercase font-black text-zinc-500 tracking-[0.2em]">Selecionar Camisas</h4>
-            <span className="text-[9px] text-zinc-700 uppercase font-bold">{products.filter(p => p[flag]).length} selecionadas</span>
-          </div>
-          <div className="flex-grow max-h-[400px] overflow-y-auto pr-2 space-y-2 no-scrollbar border border-zinc-900/30 rounded-2xl p-2 bg-black/20">
-            {products.map(p => (
-              <div 
-                key={p.id} 
-                onClick={() => toggleProductFlag(p.id, flag)}
-                className={`p-4 border-2 rounded-[24px] cursor-pointer transition-all flex items-center gap-4 ${p[flag] ? (colorClass === 'red' ? 'bg-red-500/10 border-red-500/40 shadow-lg' : colorClass === 'green' ? 'bg-green-500/10 border-green-500/40 shadow-lg' : 'bg-zinc-100/10 border-zinc-500 shadow-lg') : 'bg-zinc-900/40 border-transparent hover:border-zinc-800'}`}
-              >
-                <img src={p.image} className="w-12 h-12 object-cover rounded-xl border border-zinc-800" alt="" />
-                <div className="flex-grow">
-                   <h4 className={`text-[11px] font-black uppercase tracking-tight ${p[flag] ? 'text-white' : 'text-zinc-600'}`}>{p.name}</h4>
-                   <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mt-0.5">
-                     {categories.find(c => c.id === p.categoryId)?.name || 'Sem Categoria'}
-                   </p>
+        {flag && (
+          <div className="flex flex-col flex-grow">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-[10px] uppercase font-black text-zinc-500 tracking-[0.2em]">Selecionar Camisas</h4>
+              <span className="text-[9px] text-zinc-700 uppercase font-bold">{products.filter(p => (p as any)[flag]).length} selecionadas</span>
+            </div>
+            <div className="flex-grow max-h-[400px] overflow-y-auto pr-2 space-y-2 no-scrollbar border border-zinc-900/30 rounded-2xl p-2 bg-black/20">
+              {products.map(p => (
+                <div 
+                  key={p.id} 
+                  onClick={() => toggleProductFlag(p.id, flag as any)}
+                  className={`p-4 border-2 rounded-[24px] cursor-pointer transition-all flex items-center gap-4 ${(p as any)[flag] ? (colorClass === 'red' ? 'bg-red-500/10 border-red-500/40 shadow-lg' : colorClass === 'green' ? 'bg-green-500/10 border-green-500/40 shadow-lg' : 'bg-zinc-100/10 border-zinc-500 shadow-lg') : 'bg-zinc-900/40 border-transparent hover:border-zinc-800'}`}
+                >
+                  <img src={p.image} className="w-12 h-12 object-cover rounded-xl border border-zinc-800" alt="" />
+                  <div className="flex-grow">
+                    <h4 className={`text-[11px] font-black uppercase tracking-tight ${(p as any)[flag] ? 'text-white' : 'text-zinc-600'}`}>{p.name}</h4>
+                    <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mt-0.5">
+                      {categories.find(c => c.id === p.categoryId)?.name || 'Sem Categoria'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };
@@ -303,14 +321,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       {isUploading && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex flex-col items-center justify-center">
           <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-sm font-black uppercase tracking-widest animate-pulse">Sincronizando com Supabase Cloud...</p>
+          <p className="text-sm font-black uppercase tracking-widest animate-pulse">Processando Imagens Localmente...</p>
         </div>
       )}
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter">PV Admin <span className="text-green-500">PRO</span></h1>
-          <p className="text-zinc-500 text-[10px] uppercase tracking-[0.3em] mt-2">Sincronizado com Nuvem</p>
+          <h1 className="text-3xl font-black uppercase tracking-tighter">PV Admin <span className="text-green-500">LOCAL</span></h1>
+          <p className="text-zinc-500 text-[10px] uppercase tracking-[0.3em] mt-2">Gestão de Dados em JSON Local</p>
         </div>
         <div className="flex gap-3">
           <button onClick={onBack} className="px-6 py-2 border border-zinc-800 text-[10px] uppercase font-black hover:bg-zinc-900 transition-all rounded-xl">Vitrine</button>
@@ -403,7 +421,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between ml-2">
-                    <label className="text-[10px] uppercase font-black text-zinc-600 tracking-widest">Gerenciar Fotos (Storage)</label>
+                    <label className="text-[10px] uppercase font-black text-zinc-600 tracking-widest">Fotos (Upload Local)</label>
                     <span className="text-[9px] text-zinc-700 font-bold uppercase">{currentGallery.length} Arquivos</span>
                   </div>
                   
@@ -412,7 +430,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                     className="w-full min-h-[140px] bg-black border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-green-500/50 transition-all p-6 group"
                   >
                     <svg className="w-8 h-8 text-zinc-800 group-hover:text-green-500 transition-colors mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    <p className="text-[9px] uppercase font-black text-zinc-700 group-hover:text-zinc-400 tracking-widest text-center px-4">Arraste ou clique para enviar à Nuvem</p>
+                    <p className="text-[9px] uppercase font-black text-zinc-700 group-hover:text-zinc-400 tracking-widest text-center px-4">Clique para selecionar imagens locais</p>
                     <input 
                       type="file" 
                       ref={multiFileInputRef} 
@@ -472,7 +490,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
           {tab === 'settings' && (
             <div className="space-y-12 animate-in fade-in duration-700">
               <div className="flex gap-8 border-b border-zinc-900 pb-4 overflow-x-auto no-scrollbar whitespace-nowrap">
-                {[{ id: 'sections', label: 'Seções' }, { id: 'carousel', label: 'Carrossel' }, { id: 'logo', label: 'Logo' }].map(s => (
+                {[
+                  { id: 'sections', label: 'Seções' }, 
+                  { id: 'carousel', label: 'Carrossel' }, 
+                  { id: 'logo', label: 'Logo' },
+                  { id: 'teampv', label: 'Team PV' }
+                ].map(s => (
                   <button 
                     key={s.id} 
                     onClick={() => { setSubTab(s.id as any); resetForm(); }}
@@ -485,10 +508,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
               </div>
 
               {subTab === 'sections' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                   {renderSectionManager('Promoção', 'promoSectionActive', 'isPromo', 'red')}
                   {renderSectionManager('Lançamento', 'lancamentoSectionActive', 'isLancamento', 'zinc')}
                   {renderSectionManager('Pronta Entrega', 'prontaEntregaSectionActive', 'isProntaEntrega', 'green')}
+                  {renderSectionManager('Team PV', 'teamPVSectionActive', undefined, 'green')}
                 </div>
               )}
 
@@ -501,7 +525,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                          <input type="text" name="title" placeholder="Título" className="w-full bg-black border border-zinc-800 p-3 text-xs rounded-xl focus:border-green-500 outline-none" />
                          <input type="text" name="subtitle" placeholder="Subtítulo" className="w-full bg-black border border-zinc-800 p-3 text-xs rounded-xl focus:border-green-500 outline-none" />
                          <div onClick={() => fileInputRef.current?.click()} className="aspect-video bg-black border-2 border-dashed border-zinc-800 rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden relative group">
-                            {currentGallery[0] ? <img src={currentGallery[0]} className="w-full h-full object-cover" /> : <span className="text-[9px] uppercase font-black text-zinc-600">Upload Imagem</span>}
+                            {currentGallery[0] ? <img src={currentGallery[0]} className="w-full h-full object-cover" /> : <span className="text-[9px] uppercase font-black text-zinc-600">Upload Local</span>}
                             <input type="file" ref={fileInputRef} onChange={handleMultiFileChange} className="hidden" accept="image/*" />
                          </div>
                          <button type="submit" className="w-full bg-green-500 text-black py-4 text-[10px] font-black uppercase rounded-xl active:scale-95 transition-all">Adicionar</button>
@@ -551,6 +575,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                          <button onClick={() => selectActiveLogo(l.id)} disabled={settings.activeLogoId === l.id} className={`w-full py-2 text-[8px] font-black uppercase rounded-lg ${settings.activeLogoId === l.id ? 'bg-zinc-900 text-zinc-600' : 'bg-white text-black hover:bg-green-500 transition-colors'}`}>
                            {settings.activeLogoId === l.id ? 'Ativa' : 'Ativar'}
                          </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {subTab === 'teampv' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-4">
+                    <div className="bg-zinc-950 p-6 border border-zinc-900 rounded-[32px] shadow-xl">
+                       <h3 className="text-sm font-black uppercase mb-6 tracking-tighter">Adicionar ao Team PV</h3>
+                       <form onSubmit={handleSaveTeamPV} className="space-y-4">
+                         <input type="text" name="name" placeholder="Nome do Cliente" defaultValue={editingItem?.name} className="w-full bg-black border border-zinc-800 p-3 text-xs rounded-xl focus:border-green-500 outline-none" required />
+                         <div onClick={() => fileInputRef.current?.click()} className="aspect-[9/16] bg-black border-2 border-dashed border-zinc-800 rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden relative group">
+                            {currentGallery[0] ? <img src={currentGallery[0]} className="w-full h-full object-cover" /> : <span className="text-[9px] uppercase font-black text-zinc-600">Upload Print</span>}
+                            <input type="file" ref={fileInputRef} onChange={handleMultiFileChange} className="hidden" accept="image/*" />
+                         </div>
+                         <button type="submit" className="w-full bg-green-500 text-black py-4 text-[10px] font-black uppercase rounded-xl active:scale-95 transition-all">Salvar Cliente</button>
+                       </form>
+                    </div>
+                  </div>
+                  <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-6">
+                    {teamPVItems.map(item => (
+                      <div key={item.id} className="group bg-zinc-950 border border-zinc-900 rounded-[32px] overflow-hidden p-4 relative">
+                         <div className="aspect-[9/16] rounded-2xl overflow-hidden mb-4 relative bg-black">
+                            <img src={item.image} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                               <button onClick={() => deleteTeamPVItem(item.id)} className="p-3 bg-red-600 text-white rounded-full hover:scale-110 transition-transform">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                               </button>
+                            </div>
+                         </div>
+                         <h4 className="text-xs font-black uppercase text-center">{item.name}</h4>
+                         <div className="flex justify-center mt-2">
+                           <span className="text-[7px] font-black uppercase tracking-widest text-green-500">✔ Verificado</span>
+                         </div>
                       </div>
                     ))}
                   </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Product, AppView, Category, Subcategory, AppSettings, Logo } from './types';
+import { Product, AppView, Category, Subcategory, AppSettings, Logo, TeamPVItem } from './types';
 import * as storage from './services/storage';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -10,6 +10,7 @@ import ProductModal from './components/ProductModal';
 import CategoryCarousel from './components/CategoryCarousel';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminLogin from './components/Admin/AdminLogin';
+import TeamPVSection from './components/TeamPVSection';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('store');
@@ -20,9 +21,11 @@ const App: React.FC = () => {
     promoSectionActive: false,
     prontaEntregaSectionActive: true, 
     lancamentoSectionActive: true,
+    teamPVSectionActive: false,
     activeLogoId: 'default'
   });
   const [logos, setLogos] = useState<Logo[]>([]);
+  const [teamPVItems, setTeamPVItems] = useState<TeamPVItem[]>([]);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -45,12 +48,13 @@ const App: React.FC = () => {
   }, []);
 
   const loadAppData = async () => {
-    const [p, c, s, sett, l] = await Promise.all([
+    const [p, c, s, sett, l, tpv] = await Promise.all([
       storage.getProducts(),
       storage.getCategories(),
       storage.getSubcategories(),
       storage.getSettings(),
-      storage.getLogos()
+      storage.getLogos(),
+      storage.getTeamPVItems()
     ]);
     
     setProducts(p);
@@ -58,6 +62,7 @@ const App: React.FC = () => {
     setSubcategories(s);
     setSettings(sett);
     setLogos(l);
+    setTeamPVItems(tpv);
   };
 
   const activeLogo = useMemo(() => {
@@ -120,7 +125,7 @@ const App: React.FC = () => {
               />
             </div>
 
-            {/* SEÇÕES ESPECIAIS */}
+            {/* SEÇÕES ESPECIAIS (Apenas na Home limpa) */}
             {!isBrowsing && (
               <div className="space-y-0">
                 {settings.promoSectionActive && promoProducts.length > 0 && (
@@ -185,6 +190,7 @@ const App: React.FC = () => {
               </div>
             )}
 
+            {/* LISTAGEM GERAL / RESULTADOS */}
             <section className="container mx-auto px-4 py-24">
               <div className="flex items-center justify-between mb-12">
                 <h2 className="text-3xl font-black uppercase tracking-tighter border-l-8 border-green-500 pl-6">
@@ -218,6 +224,11 @@ const App: React.FC = () => {
               activeSubcategory={activeSubcategory}
               onSubcategoryChange={setActiveSubcategory}
             />
+
+            {/* SEÇÃO SOCIAL TEAM PV (Sempre visível no final da página se ativa) */}
+            {settings.teamPVSectionActive && teamPVItems.length > 0 && (
+              <TeamPVSection items={teamPVItems} />
+            )}
           </main>
 
           <footer className="bg-black border-t border-zinc-900 pt-24 pb-12 text-center">
