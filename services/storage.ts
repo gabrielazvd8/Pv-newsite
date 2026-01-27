@@ -4,15 +4,10 @@ import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamP
 // Configurações Cloudinary
 const CLOUDINARY_CONFIG = {
   CLOUD_NAME: 'dqvqkfkti',
-  LOGOS: {
-    PRESET: 'pvsports_logo',
-    FOLDER: 'pvsports/logos',
-    TRANSFORM: 'h_80,c_scale'
-  },
-  BANNERS: {
-    PRESET: 'pvsports_banners',
-    FOLDER: 'pvsports/banners',
-    TRANSFORM: 'w_1600,h_600,c_fill,g_center'
+  // Presets configurados no Cloudinary (Unsigned)
+  PRESETS: {
+    LOGOS: 'pvsports_logo',
+    BANNERS: 'pvsports_banners'
   }
 };
 
@@ -184,17 +179,20 @@ export const saveSettings = async (settings: AppSettings) => {
 };
 
 /**
- * Upload para Cloudinary (Unsigned)
- * Suporta presets de Logo e Banners
+ * Upload para Cloudinary (Original Quality)
+ * @param file Arquivo selecionado
+ * @param folder Pasta destino no Cloudinary
+ * @param type Tipo de upload para determinar o preset
  */
-export const uploadToCloudinary = async (file: File, type: 'logo' | 'banner'): Promise<string> => {
+export const uploadToCloudinary = async (file: File, folder: string, type: 'logo' | 'banner' | 'general' = 'general'): Promise<string> => {
   const formData = new FormData();
   formData.append('file', file);
   
-  const config = type === 'logo' ? CLOUDINARY_CONFIG.LOGOS : CLOUDINARY_CONFIG.BANNERS;
+  // Define o preset baseado no tipo
+  const preset = type === 'logo' ? CLOUDINARY_CONFIG.PRESETS.LOGOS : CLOUDINARY_CONFIG.PRESETS.BANNERS;
   
-  formData.append('upload_preset', config.PRESET);
-  formData.append('folder', config.FOLDER);
+  formData.append('upload_preset', preset);
+  formData.append('folder', folder);
 
   try {
     const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.CLOUD_NAME}/image/upload`, {
@@ -204,29 +202,14 @@ export const uploadToCloudinary = async (file: File, type: 'logo' | 'banner'): P
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Falha no upload para o Cloudinary');
+      throw new Error(errorData.error?.message || 'Erro no Cloudinary');
     }
 
     const data = await response.json();
-    let secureUrl = data.secure_url;
-    
-    // Injeta transformações na URL
-    if (secureUrl.includes('/upload/')) {
-      secureUrl = secureUrl.replace('/upload/', `/upload/${config.TRANSFORM}/`);
-    }
-    
-    return secureUrl;
+    // Retorna a URL segura sem transformações
+    return data.secure_url;
   } catch (error: any) {
     console.error('Cloudinary Error:', error);
     throw error;
   }
-};
-
-export const uploadLocalFile = async (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 };
