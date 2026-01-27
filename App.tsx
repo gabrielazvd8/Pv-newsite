@@ -244,7 +244,7 @@ const App: React.FC = () => {
             </div>
             <div className="container mx-auto px-4 border-t border-zinc-900 pt-12">
                <p className="text-zinc-800 text-[9px] uppercase tracking-[0.6em] font-medium italic">
-                 PV Sports Heritage &mdash; Estilo e Performance de Elite &copy; 2024
+                 PV Sports &mdash; Estilo e Performance de Elite &copy; 2020
                </p>
             </div>
           </footer>

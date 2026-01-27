@@ -54,18 +54,8 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Categories Menu com Miniaturas */}
+        {/* Categories Menu com Miniaturas - Botão ALL removido para evitar redundância */}
         <nav className={`transition-all duration-700 flex items-center justify-center gap-4 overflow-x-auto pb-2 mt-8 scrollbar-hide no-scrollbar ${isScrolled ? 'max-h-0 opacity-0 pointer-events-none mt-0' : 'max-h-24 opacity-100 mt-10'}`}>
-          <button 
-            onClick={() => onCategoryChange('All')}
-            className={`flex flex-col items-center gap-2 group transition-all`}
-          >
-            <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all ${activeCategory === 'All' ? 'border-green-500 bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'border-zinc-800 bg-zinc-900 group-hover:border-zinc-600'}`}>
-              <span className={`text-[10px] font-black ${activeCategory === 'All' ? 'text-black' : 'text-zinc-500'}`}>ALL</span>
-            </div>
-            <span className={`text-[8px] uppercase font-black tracking-widest ${activeCategory === 'All' ? 'text-green-500' : 'text-zinc-600'}`}>Tudo</span>
-          </button>
-
           {categories.map(cat => (
             <div key={cat.id} className="relative group flex flex-col items-center gap-2">
               <button 
