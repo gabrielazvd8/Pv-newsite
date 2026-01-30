@@ -1,15 +1,17 @@
 
 export interface Category {
   id: string;
-  name: string;
-  image: string;
+  nome: string;
+  midia: string;
+  ativo: boolean;
 }
 
 export interface Subcategory {
   id: string;
-  name: string;
-  categoryId: string;
-  image: string;
+  nome: string;
+  categoriaId: string;
+  midia: string;
+  ativo: boolean;
 }
 
 export interface Product {
@@ -31,8 +33,10 @@ export interface Product {
 export interface CarouselImage {
   id: string;
   url: string;
+  public_id?: string;
   title?: string;
   subtitle?: string;
+  align: 'left' | 'center' | 'right';
   active: boolean;
 }
 
@@ -40,6 +44,7 @@ export interface Logo {
   id: string;
   url: string;
   name: string;
+  active?: boolean;
 }
 
 export interface TeamPVItem {
@@ -47,6 +52,7 @@ export interface TeamPVItem {
   name: string;
   image: string;
   verified: boolean;
+  public_id?: string;
 }
 
 export interface AppSettings {

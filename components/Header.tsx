@@ -23,68 +23,40 @@ const Header: React.FC<HeaderProps> = ({
   activeLogo
 }) => {
   return (
-    <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-700 ${isScrolled ? 'bg-black/95 backdrop-blur-xl py-4 border-b border-zinc-900 shadow-2xl' : 'bg-transparent py-10'}`}>
+    <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-1000 ${isScrolled ? 'bg-black/95 backdrop-blur-3xl py-4 border-b border-zinc-900/50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : 'bg-transparent py-10'}`}>
       <div className="container mx-auto px-4">
-        {/* Main Layout Area */}
-        <div className={`relative flex items-center transition-all duration-700 ${isScrolled ? 'justify-between' : 'justify-center'}`}>
-          
-          {/* Logo */}
-          <div 
-            className={`transition-all duration-700 cursor-pointer z-20 ${isScrolled ? 'w-24 md:w-32 transform-none' : 'w-48 md:w-64 transform -translate-y-2'}`} 
-            onClick={() => { onCategoryChange('All'); window.scrollTo({top: 0, behavior: 'smooth'}); }}
-          >
-             <img src={activeLogo?.url || "assets/img/IMG_3069.PNG"} alt="PV Sports" className="w-full h-auto drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all" />
+        <div className={`relative flex items-center transition-all duration-1000 ${isScrolled ? 'justify-between' : 'justify-center'}`}>
+          <div className={`transition-all duration-1000 cursor-pointer z-20 flex items-center justify-center ${isScrolled ? 'w-24 md:w-32 transform-none' : 'w-56 md:w-80 transform -translate-y-2'}`} onClick={() => { onCategoryChange('All'); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
+             {activeLogo?.url ? (
+               <img src={activeLogo.url} alt="PV Sports" className="object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all" style={{ height: isScrolled ? '40px' : '75px', width: 'auto', maxWidth: '100%' }} />
+             ) : (
+               <h1 className="text-2xl font-black italic tracking-tighter text-green-500">PV<span className="text-white">SPORTS</span></h1>
+             )}
           </div>
-
-          {/* Search Bar - Visible on scroll */}
-          <div className={`absolute left-1/2 -translate-x-1/2 w-full max-w-lg transition-all duration-700 pointer-events-none px-4 ${isScrolled ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 -translate-y-8 scale-90'}`}>
+          <div className={`absolute left-1/2 -translate-x-1/2 w-full max-w-xl transition-all duration-1000 pointer-events-none px-4 ${isScrolled ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 -translate-y-12 scale-90'}`}>
             <SearchBar value={searchQuery} onChange={onSearchChange} neonEffect={false} />
           </div>
-
-          {/* Admin Toggle */}
-          <div className={`flex items-center gap-4 transition-all duration-700 ${isScrolled ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10 pointer-events-none'}`}>
-            <button 
-              onClick={onAdminClick} 
-              className="p-3 bg-zinc-900/50 border border-zinc-800 rounded-2xl hover:bg-green-500 hover:text-black hover:border-green-400 transition-all group active:scale-90"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </button>
+          <div className={`flex items-center gap-6 transition-all duration-1000 ${isScrolled ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12 pointer-events-none'}`}>
+            <button onClick={onAdminClick} className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-[24px] text-zinc-400 hover:text-green-500 transition-all shadow-xl active:scale-90"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></button>
           </div>
         </div>
 
-        {/* Categories Menu com Miniaturas - Botão ALL removido para evitar redundância */}
-        <nav className={`transition-all duration-700 flex items-center justify-center gap-4 overflow-x-auto pb-2 mt-8 scrollbar-hide no-scrollbar ${isScrolled ? 'max-h-0 opacity-0 pointer-events-none mt-0' : 'max-h-24 opacity-100 mt-10'}`}>
+        <nav className={`transition-all duration-1000 flex items-center justify-center gap-6 overflow-x-auto pb-4 mt-8 no-scrollbar ${isScrolled ? 'max-h-0 opacity-0 pointer-events-none mt-0' : 'max-h-32 opacity-100 mt-12'}`}>
           {categories.map(cat => (
-            <div key={cat.id} className="relative group flex flex-col items-center gap-2">
-              <button 
-                onClick={() => onCategoryChange(cat.id)}
-                className={`w-12 h-12 rounded-full border-2 overflow-hidden transition-all ${activeCategory === cat.id ? 'border-green-500 scale-110 shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'border-zinc-800 hover:border-zinc-600'}`}
-              >
-                <img src={cat.image} className="w-full h-full object-cover" alt={cat.name} />
+            <div key={cat.id} className="relative group flex flex-col items-center gap-3">
+              <button onClick={() => onCategoryChange(cat.id)} className={`w-14 h-14 rounded-full border-2 overflow-hidden transition-all duration-500 ${activeCategory === cat.id ? 'border-green-500 scale-110' : 'border-zinc-800'}`}>
+                <img src={cat.midia} className="w-full h-full object-cover" alt={cat.nome} />
               </button>
-              <span className={`text-[8px] uppercase font-black tracking-widest ${activeCategory === cat.id ? 'text-green-500' : 'text-zinc-600'}`}>{cat.name}</span>
-              
-              {/* Dropdown for Subcategories */}
+              <span className={`text-[9px] uppercase font-black tracking-[0.2em] ${activeCategory === cat.id ? 'text-green-500' : 'text-zinc-600'}`}>{cat.nome}</span>
               {activeCategory === cat.id && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 bg-zinc-950/90 border border-zinc-800 rounded-3xl p-3 min-w-[220px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] z-50 backdrop-blur-3xl animate-in fade-in slide-in-from-top-2">
-                   <button 
-                    onClick={() => onSubcategoryChange('All')}
-                    className={`flex items-center gap-3 w-full px-4 py-3 text-[10px] uppercase font-black tracking-widest rounded-xl transition-colors ${activeSubcategory === 'All' ? 'bg-green-500/10 text-green-500' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
-                   >
-                     <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-[8px]">★</div>
-                     Ver Todos
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-6 bg-black/90 backdrop-blur-3xl border border-zinc-800 rounded-[32px] p-4 min-w-[240px] shadow-2xl z-[100] animate-in fade-in slide-in-from-top-4">
+                   <button onClick={() => onSubcategoryChange('All')} className={`flex items-center gap-4 w-full px-5 py-4 text-[10px] uppercase font-black rounded-2xl ${activeSubcategory === 'All' ? 'bg-green-500/10 text-green-500' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}>
+                     <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-green-500">★</div> Ver Todos
                    </button>
-                   <div className="h-[1px] bg-zinc-900 my-2"></div>
-                   {subcategories.filter(s => s.categoryId === cat.id).map(sub => (
-                     <button 
-                      key={sub.id}
-                      onClick={() => onSubcategoryChange(sub.id)}
-                      className={`flex items-center gap-3 w-full px-4 py-3 text-[10px] uppercase font-black tracking-widest rounded-xl transition-colors ${activeSubcategory === sub.id ? 'bg-green-500/10 text-green-500' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
-                     >
-                       {sub.image && <img src={sub.image} className="w-6 h-6 rounded object-cover" alt="" />}
-                       {sub.name}
+                   <div className="h-[1px] bg-zinc-900/50 my-3 mx-2"></div>
+                   {subcategories.filter(s => s.categoriaId === cat.id).map(sub => (
+                     <button key={sub.id} onClick={() => onSubcategoryChange(sub.id)} className={`flex items-center gap-4 w-full px-5 py-4 text-[10px] uppercase font-black rounded-2xl ${activeSubcategory === sub.id ? 'bg-green-500/10 text-green-500' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}>
+                       {sub.midia && <img src={sub.midia} className="w-8 h-8 rounded-xl object-cover" alt="" />} {sub.nome}
                      </button>
                    ))}
                 </div>
