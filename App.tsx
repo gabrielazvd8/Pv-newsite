@@ -34,6 +34,8 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  const currentYear = new Date().getFullYear();
+
   useEffect(() => {
     const initApp = async () => {
       await loadAppData();
@@ -49,7 +51,6 @@ const App: React.FC = () => {
   const loadAppData = async () => {
     try {
       const siteConfig = await storage.getSiteConfig();
-      // BUSCA AUTORITATIVA DO FIREBASE (Apenas ativos para a vitrine)
       const [p, c, s, allLogos, tpv] = await Promise.all([
         storage.getProducts(),
         storage.getCategories(true),
@@ -57,19 +58,16 @@ const App: React.FC = () => {
         storage.getLogos(),
         storage.getTeamPVItems()
       ]);
-      
       setProducts(p || []);
       setCategories(c || []);
       setSubcategories(s || []);
       setSettings(siteConfig.settings);
       setLogos(allLogos || []);
       setTeamPVItems(tpv || []);
-    } catch (err) {
-      console.error("Critical Failure Loading App Data:", err);
-    }
+    } catch (err) { console.error("Falha ao carregar dados vitrine:", err); }
   };
 
-  const activeLogo = useMemo(() => logos.find(l => l.active) || logos[0], [logos]);
+  const activeLogo = useMemo(() => logos.find(l => l.ativo) || logos[0], [logos]);
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
@@ -84,25 +82,20 @@ const App: React.FC = () => {
   const prontaEntregaProducts = useMemo(() => products.filter(p => p.isProntaEntrega), [products]);
   const lancamentoProducts = useMemo(() => products.filter(p => p.isLancamento), [products]);
 
-  const isBrowsing = activeCategory !== 'All' || searchQuery !== '';
+  const isBrowsing = activeCategory !== 'All' || activeSubcategory !== 'All' || searchQuery !== '';
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setActiveCategory('All');
+    setActiveSubcategory('All');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  };
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-green-500/30 flex flex-col overflow-x-hidden">
       {view === 'store' && (
         <>
-          <Header 
-            isScrolled={isScrolled}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            categories={categories}
-            subcategories={subcategories}
-            activeCategory={activeCategory}
-            onCategoryChange={(id) => { setActiveCategory(id); setActiveSubcategory('All'); }}
-            activeSubcategory={activeSubcategory}
-            onSubcategoryChange={setActiveSubcategory}
-            onAdminClick={() => setView(isAuthenticated ? 'admin' : 'login')}
-            activeLogo={activeLogo}
-          />
+          <Header isScrolled={isScrolled} searchQuery={searchQuery} onSearchChange={setSearchQuery} onAdminClick={() => setView(isAuthenticated ? 'admin' : 'login')} activeLogo={activeLogo} onResetFilter={handleResetFilters} />
           
           <main className="flex-grow">
             <Hero />
@@ -114,30 +107,28 @@ const App: React.FC = () => {
             {!isBrowsing && (
               <div className="space-y-0">
                 {settings.promoSectionActive && promoProducts.length > 0 && (
-                  <section className="bg-red-600/5 border-y border-red-500/20 py-24">
-                    <div className="container mx-auto px-4 text-center">
-                        <span className="text-red-500 text-[11px] font-black uppercase tracking-[0.5em] mb-4 bg-red-500/10 px-4 py-1 rounded-full border border-red-500/20 inline-block">Oferta Limitada</span>
-                        <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter text-white mb-12">PROMO<span className="text-red-500">ÇÃO</span></h2>
+                  <section className="bg-red-600/5 border-y border-red-500/20 py-24 text-center">
+                    <div className="container mx-auto px-4">
+                      <span className="text-red-500 text-[11px] font-black uppercase tracking-[0.5em] mb-4 bg-red-500/10 px-4 py-1 rounded-full border border-red-500/20 inline-block">Sale Elite</span>
+                      <h2 className="text-5xl md:text-7xl font-black italic uppercase italic tracking-tighter text-white mb-12">PROMO<span className="text-red-500">ÇÃO</span></h2>
                       <ProductGrid products={promoProducts} onProductClick={setSelectedProduct} />
                     </div>
                   </section>
                 )}
-
                 {settings.lancamentoSectionActive && lancamentoProducts.length > 0 && (
-                  <section className="bg-zinc-950/50 border-b border-zinc-900 py-24">
-                    <div className="container mx-auto px-4 text-center">
-                        <span className="text-white text-[11px] font-black uppercase tracking-[0.5em] mb-4 bg-white/5 px-4 py-1 rounded-full border border-white/10 inline-block">Novidade</span>
-                        <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter text-white mb-12">LANÇA<span className="text-zinc-500">MENTO</span></h2>
+                  <section className="bg-zinc-950/50 border-b border-zinc-900 py-24 text-center">
+                    <div className="container mx-auto px-4">
+                      <span className="text-white text-[11px] font-black uppercase tracking-[0.5em] mb-4 bg-white/5 px-4 py-1 rounded-full border border-white/10 inline-block">Drop {currentYear}</span>
+                      <h2 className="text-5xl md:text-7xl font-black italic uppercase italic tracking-tighter text-white mb-12">LANÇA<span className="text-zinc-500">MENTO</span></h2>
                       <ProductGrid products={lancamentoProducts} onProductClick={setSelectedProduct} />
                     </div>
                   </section>
                 )}
-
                 {settings.prontaEntregaSectionActive && prontaEntregaProducts.length > 0 && (
-                  <section className="bg-zinc-950 border-b border-zinc-900 py-24">
-                    <div className="container mx-auto px-4 text-center">
-                        <span className="text-green-500 text-[11px] font-black uppercase tracking-[0.5em] mb-4 bg-green-500/10 px-4 py-1 rounded-full border border-green-500/20 inline-block">Envio Imediato</span>
-                        <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter text-white mb-12">PRONTA <span className="text-green-500">ENTREGA</span></h2>
+                  <section className="bg-zinc-950 border-b border-zinc-900 py-24 text-center">
+                    <div className="container mx-auto px-4">
+                      <span className="text-green-500 text-[11px] font-black uppercase tracking-[0.5em] mb-4 bg-green-500/10 px-4 py-1 rounded-full border border-green-500/20 inline-block">Pronta Entrega</span>
+                      <h2 className="text-5xl md:text-7xl font-black italic uppercase italic tracking-tighter text-white mb-12">FAST <span className="text-green-500">STOCK</span></h2>
                       <ProductGrid products={prontaEntregaProducts} onProductClick={setSelectedProduct} />
                     </div>
                   </section>
@@ -148,65 +139,50 @@ const App: React.FC = () => {
             <section className="container mx-auto px-4 py-24">
               <div className="flex items-center justify-between mb-12 border-l-[12px] border-green-500 pl-8">
                 <h2 className="text-4xl font-black italic uppercase tracking-tighter">
-                  {isBrowsing 
-                    ? (activeCategory === 'All' ? 'Resultados' : categories.find(c => c.id === activeCategory)?.nome)
-                    : 'Coleção PV Elite'
+                  {activeSubcategory !== 'All' 
+                    ? subcategories.find(s => s.id === activeSubcategory)?.nome 
+                    : activeCategory !== 'All' 
+                      ? categories.find(c => c.id === activeCategory)?.nome 
+                      : 'Vitrine Global'
                   }
                 </h2>
-                <span className="hidden md:block text-[10px] uppercase tracking-widest text-zinc-700 font-black">{filteredProducts.length} Peças Disponíveis</span>
+                <span className="hidden md:block text-[10px] uppercase tracking-widest text-zinc-700 font-black">{filteredProducts.length} Itens</span>
               </div>
-
               {filteredProducts.length > 0 ? (
                 <ProductGrid products={filteredProducts} onProductClick={setSelectedProduct} />
               ) : (
                 <div className="py-32 text-center bg-zinc-950 rounded-[40px] border border-zinc-900">
-                  <p className="text-zinc-600 uppercase tracking-[0.3em] font-black text-xs italic mb-4">Sem armaduras nesta seleção.</p>
-                  <button onClick={() => {setSearchQuery(''); setActiveCategory('All'); setActiveSubcategory('All');}} className="text-green-500 text-[10px] font-black uppercase tracking-widest hover:underline">Resetar Filtros</button>
+                  <p className="text-zinc-600 uppercase tracking-[0.3em] font-black text-xs italic mb-4">Nenhum resultado nesta hierarquia.</p>
+                  <button onClick={handleResetFilters} className="text-green-500 text-[10px] font-black uppercase tracking-widest">Resetar Filtros</button>
                 </div>
               )}
             </section>
 
             <CategoryCarousel 
-              categories={categories}
-              subcategories={subcategories}
-              activeCategory={activeCategory}
-              onCategoryChange={(id) => { setActiveCategory(id); setActiveSubcategory('All'); }}
-              activeSubcategory={activeSubcategory}
-              onSubcategoryChange={setActiveSubcategory}
+              categories={categories} subcategories={subcategories} activeCategory={activeCategory} 
+              onCategoryChange={(id) => { setActiveCategory(id); setActiveSubcategory('All'); }} 
+              activeSubcategory={activeSubcategory} onSubcategoryChange={setActiveSubcategory} 
             />
 
             {settings.teamPVSectionActive && teamPVItems.length > 0 && <TeamPVSection items={teamPVItems} />}
           </main>
 
           <footer className="bg-black border-t border-zinc-900 pt-32 pb-16 text-center">
-            <div className="mb-16 opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-700 inline-block cursor-crosshair">
-               <img src={activeLogo?.url || "assets/img/IMG_3069.PNG"} alt="PV Sports" className="h-24 md:h-32 object-contain" />
+            <div className="mb-16 opacity-30 hover:opacity-100 transition-all duration-700 inline-block">
+               <img src={activeLogo?.midia_url || "assets/img/IMG_3069.PNG"} alt="PV Sports" className="h-24 md:h-32 object-contain" />
             </div>
             <div className="flex justify-center gap-16 mb-24">
-              {['Instagram', 'WhatsApp', 'Suporte Elite'].map(item => (
-                <span key={item} className="text-[10px] uppercase tracking-[0.5em] text-zinc-700 hover:text-green-500 cursor-pointer transition-all font-black italic">
-                  {item}
-                </span>
+              {['Instagram', 'WhatsApp'].map(item => (
+                <span key={item} className="text-[10px] uppercase tracking-[0.5em] text-zinc-700 hover:text-green-500 cursor-pointer font-black italic">{item}</span>
               ))}
             </div>
             <div className="container mx-auto px-4 border-t border-zinc-900 pt-16">
-               <p className="text-zinc-800 text-[9px] uppercase tracking-[0.8em] font-black italic">
-                 PV Sports Heritage &mdash; Estilo de Elite &copy; 2025
-               </p>
+               <p className="text-zinc-800 text-[9px] uppercase tracking-[0.8em] font-black italic">PV Sports Heritage &mdash; Estilo de Elite &copy; {currentYear}</p>
             </div>
           </footer>
-
-          <div className="bg-[#050505] py-10 border-t border-zinc-900/50 text-center">
-            <a href="https://wa.me/5584998081630" target="_blank" rel="noopener noreferrer" className="group flex flex-col items-center gap-2 text-[8px] text-zinc-800 hover:text-green-500/50 transition-colors uppercase font-black tracking-[0.3em]">
-              <span className="opacity-40 group-hover:opacity-100">Coded with Precision by AZVD.AI</span>
-              <span className="text-[10px] text-zinc-900 group-hover:text-green-900">Gabriel Azevedo &mdash; Lead Engineer</span>
-            </a>
-          </div>
-
           <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
         </>
       )}
-
       {view === 'login' && <AdminLogin onSuccess={() => { setIsAuthenticated(true); setView('admin'); sessionStorage.setItem('pv_admin_auth', 'true'); }} onCancel={() => setView('store')} />}
       {view === 'admin' && <AdminDashboard onLogout={() => { setIsAuthenticated(false); setView('store'); sessionStorage.removeItem('pv_admin_auth'); }} onBack={() => setView('store')} onUpdate={loadAppData} />}
     </div>

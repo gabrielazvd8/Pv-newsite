@@ -26,23 +26,25 @@ const db = getFirestore(app);
 const CLOUDINARY_CONFIG = {
   CLOUD_NAME: 'dqvqkfkti',
   API_ENDPOINT: 'https://api.cloudinary.com/v1_1/dqvqkfkti/image/upload',
+  API_KEY: '394625577664157',
   PRESETS: {
-    LOGOS: 'pvsports_logo',
+    LOGOS: 'pvsports_logos',
     BANNERS: 'pvsports_banners',
     TEAMPV: 'pvsports_teampv',
-    MINIATURAS: 'pvsports_miniaturas'
+    MINIATURAS: 'pvsports_miniaturas',
+    PRODUTOS: 'pvsports_miniaturas'
   },
   FOLDERS: {
-    LOGOS: 'pvsports/logos',
+    LOGOS: 'pvsports/Logos',
     BANNERS: 'pvsports/banners',
     TEAMPV: 'pvsports/Team_pv',
-    MINIATURAS: 'pvsports/Miniaturas'
+    MINIATURAS: 'pvsports/Miniaturas',
+    PRODUTOS: 'pvsports/Produtos'
   }
 };
 
 const KEYS = {
-  SITE_CONFIG: 'pv_site_config',
-  PRODUTOS: 'pv_data_produtos'
+  SITE_CONFIG: 'pv_site_config'
 };
 
 const getLocal = <T>(key: string, defaultValue: T): T => {
@@ -52,6 +54,24 @@ const getLocal = <T>(key: string, defaultValue: T): T => {
 };
 
 const setLocal = (key: string, data: any) => localStorage.setItem(key, JSON.stringify(data));
+
+export const deleteFromCloudinary = async (public_id: string, resourceType: 'image' | 'video' = 'image'): Promise<boolean> => {
+  if (!public_id) return true;
+  console.log(`Cloudinary DELETE Request: ${public_id} (${resourceType})`);
+  try {
+    const destroyUrl = CLOUDINARY_CONFIG.API_ENDPOINT
+      .replace('/image/', `/${resourceType}/`)
+      .replace('/upload', '/destroy');
+    const formData = new FormData();
+    formData.append('public_id', public_id);
+    formData.append('api_key', CLOUDINARY_CONFIG.API_KEY);
+    await fetch(destroyUrl, { method: 'POST', body: formData });
+    return true; 
+  } catch (err) {
+    console.warn("Cloudinary Destroy failed:", err);
+    return true;
+  }
+};
 
 export const getSiteConfig = async (): Promise<any> => {
   const defaultConfig = {
@@ -64,19 +84,17 @@ export const getSiteConfig = async (): Promise<any> => {
       activeLogoId: 'default'
     }
   };
-  let config = getLocal<any>(KEYS.SITE_CONFIG, defaultConfig);
   try {
-    const q = query(collection(db, "site_logos"), where("active", "==", true));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const fbData = snap.docs[0].data();
-      config.logo = { id: snap.docs[0].id, url: fbData.url, name: fbData.name, active: true };
+    const docRef = doc(db, "site_config", "general_settings");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { ...defaultConfig, settings: docSnap.data() as AppSettings };
     }
-  } catch (err) { console.warn(err); }
-  return config;
+  } catch (err) { console.warn("Erro ao carregar configurações do Firebase:", err); }
+  return getLocal<any>(KEYS.SITE_CONFIG, defaultConfig);
 };
 
-export const uploadToCloudinary = async (file: File, type: 'logo' | 'banner' | 'teampv' | 'product' | 'category'): Promise<{url: string, public_id: string}> => {
+export const uploadToCloudinary = async (file: File, type: 'logo' | 'banner' | 'teampv' | 'product' | 'category' | 'subcategory' | 'video'): Promise<{url: string, public_id: string}> => {
   const formData = new FormData();
   formData.append('file', file);
   
@@ -85,10 +103,12 @@ export const uploadToCloudinary = async (file: File, type: 'logo' | 'banner' | '
 
   if (type === 'logo') { preset = CLOUDINARY_CONFIG.PRESETS.LOGOS; folder = CLOUDINARY_CONFIG.FOLDERS.LOGOS; }
   else if (type === 'teampv') { preset = CLOUDINARY_CONFIG.PRESETS.TEAMPV; folder = CLOUDINARY_CONFIG.FOLDERS.TEAMPV; }
-  else if (type === 'category') { preset = CLOUDINARY_CONFIG.PRESETS.MINIATURAS; folder = CLOUDINARY_CONFIG.FOLDERS.MINIATURAS; }
+  else if (type === 'category' || type === 'subcategory') { preset = CLOUDINARY_CONFIG.PRESETS.MINIATURAS; folder = CLOUDINARY_CONFIG.FOLDERS.MINIATURAS; }
+  else if (type === 'product' || type === 'video') { preset = CLOUDINARY_CONFIG.PRESETS.PRODUTOS; folder = CLOUDINARY_CONFIG.FOLDERS.PRODUTOS; }
   
   formData.append('upload_preset', preset);
   formData.append('folder', folder);
+  formData.append('resource_type', type === 'video' ? 'video' : 'image');
 
   const response = await fetch(CLOUDINARY_CONFIG.API_ENDPOINT, { method: 'POST', body: formData });
   const data = await response.json();
@@ -96,102 +116,261 @@ export const uploadToCloudinary = async (file: File, type: 'logo' | 'banner' | '
   return { url: data.secure_url, public_id: data.public_id };
 };
 
-// --- CATEGORIAS (FIREBASE 'categorias') ---
+// --- CATEGORIAS ---
 export const getCategories = async (onlyActive = false): Promise<Category[]> => {
   try {
-    let q = query(collection(db, "categorias"), orderBy("nome", "asc"));
-    if (onlyActive) q = query(collection(db, "categorias"), where("ativo", "==", true), orderBy("nome", "asc"));
-    
+    const q = query(collection(db, "site_categorias"), orderBy("criadoEm", "desc"));
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Category));
+    const allCategories = snap.docs.map(d => ({ id: d.id, ...d.data() } as Category));
+    return onlyActive ? allCategories.filter(cat => cat.ativo === true) : allCategories;
   } catch (err) {
-    console.error(err);
+    console.error("Erro ao buscar categorias:", err);
     return [];
   }
 };
 
 export const saveCategory = async (cat: Partial<Category>) => {
-  if (cat.id) {
-    await updateDoc(doc(db, "categorias", cat.id), { ...cat, updatedAt: serverTimestamp() });
-  } else {
-    await addDoc(collection(db, "categorias"), { ...cat, ativo: true, createdAt: serverTimestamp() });
-  }
+  if (!cat.nome || !cat.midia) throw new Error("Campos obrigatórios ausentes");
+  const data = { nome: cat.nome, midia: cat.midia, cloudinary_id: cat.cloudinary_id || null, ativo: cat.ativo ?? true, atualizadoEm: serverTimestamp() };
+  if (cat.id) await updateDoc(doc(db, "site_categorias", cat.id), data);
+  else await addDoc(collection(db, "site_categorias"), { ...data, criadoEm: serverTimestamp() });
 };
 
-export const deleteCategory = async (id: string) => await deleteDoc(doc(db, "categorias", id));
+export const deleteCategory = async (id: string) => {
+  const docRef = doc(db, "site_categorias", id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data() as Category;
+    if (data.cloudinary_id) await deleteFromCloudinary(data.cloudinary_id);
+  }
+  await deleteDoc(docRef);
+};
 
-// --- SUBCATEGORIAS (FIREBASE 'subcategorias') ---
+// --- SUBCATEGORIAS ---
 export const getSubcategories = async (onlyActive = false): Promise<Subcategory[]> => {
   try {
-    let q = query(collection(db, "subcategorias"), orderBy("nome", "asc"));
-    if (onlyActive) q = query(collection(db, "subcategorias"), where("ativo", "==", true), orderBy("nome", "asc"));
-    
+    const q = query(collection(db, "site_subcategorias"), orderBy("nome", "asc"));
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Subcategory));
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Subcategory));
+    return onlyActive ? all.filter(s => s.ativo) : all;
   } catch (err) {
-    console.error(err);
+    console.error("Erro ao buscar subcategorias:", err);
     return [];
   }
 };
 
 export const saveSubcategory = async (sub: Partial<Subcategory>) => {
-  if (sub.id) {
-    await updateDoc(doc(db, "subcategorias", sub.id), { ...sub, updatedAt: serverTimestamp() });
-  } else {
-    await addDoc(collection(db, "subcategorias"), { ...sub, ativo: true, createdAt: serverTimestamp() });
+  if (!sub.nome || !sub.categoriaId || !sub.midia) throw new Error("Preencha Nome, Categoria e Mídia");
+  const data = { 
+    nome: sub.nome, 
+    categoriaId: sub.categoriaId, 
+    categoriaNome: sub.categoriaNome || '',
+    midia: sub.midia, 
+    cloudinary_id: sub.cloudinary_id || null,
+    ativo: sub.ativo ?? true,
+    ordem: sub.ordem || 0,
+    atualizadoEm: serverTimestamp()
+  };
+  if (sub.id) await updateDoc(doc(db, "site_subcategorias", sub.id), data);
+  else await addDoc(collection(db, "site_subcategorias"), { ...data, criadoEm: serverTimestamp() });
+};
+
+export const deleteSubcategory = async (id: string) => {
+  const docRef = doc(db, "site_subcategorias", id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data() as Subcategory;
+    if (data.cloudinary_id) await deleteFromCloudinary(data.cloudinary_id);
+  }
+  await deleteDoc(docRef);
+};
+
+// --- PRODUTOS ---
+export const getProducts = async (): Promise<Product[]> => {
+  try {
+    const q = query(collection(db, "site_produtos"), orderBy("criadoEm", "desc"));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+  } catch (err) {
+    console.error("Erro ao buscar produtos:", err);
+    return [];
   }
 };
 
-export const deleteSubcategory = async (id: string) => await deleteDoc(doc(db, "subcategorias", id));
-
-// --- OUTROS ---
-export const getProducts = async (): Promise<Product[]> => getLocal<Product[]>(KEYS.PRODUTOS, []);
-export const saveProduct = async (p: Product) => {
-  const prods = await getProducts();
-  const i = prods.findIndex(x => x.id === p.id);
-  if (i >= 0) prods[i] = p; else prods.unshift(p);
-  setLocal(KEYS.PRODUTOS, prods);
+export const saveProduct = async (p: Partial<Product>) => {
+  if (!p.categoryId || !p.subcategoryId) throw new Error("Categoria e Subcategoria são obrigatórias");
+  const data = {
+    name: p.name,
+    description: p.description,
+    categoryId: p.categoryId,
+    categoryName: p.categoryName || '',
+    subcategoryId: p.subcategoryId,
+    subcategoryName: p.subcategoryName || '',
+    image: p.images?.[0] || '',
+    images: p.images || [],
+    cloudinary_ids: p.cloudinary_ids || [],
+    video: p.video || null,
+    video_cloudinary_id: p.video_cloudinary_id || null,
+    isProntaEntrega: p.isProntaEntrega ?? false,
+    isLancamento: p.isLancamento ?? false,
+    isPromo: p.isPromo ?? false,
+    price: p.price || '',
+    oldPrice: p.oldPrice || '',
+    ativo: p.ativo ?? true,
+    atualizadoEm: serverTimestamp()
+  };
+  if (p.id) await updateDoc(doc(db, "site_produtos", p.id), data);
+  else await addDoc(collection(db, "site_produtos"), { ...data, criadoEm: serverTimestamp() });
 };
-export const deleteProduct = async (id: string) => setLocal(KEYS.PRODUTOS, (await getProducts()).filter(x => x.id !== id));
 
+export const deleteProduct = async (id: string) => {
+  const docRef = doc(db, "site_produtos", id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data() as Product;
+    if (data.cloudinary_ids) {
+      for (const cid of data.cloudinary_ids) await deleteFromCloudinary(cid, 'image');
+    }
+    if (data.video_cloudinary_id) await deleteFromCloudinary(data.video_cloudinary_id, 'video');
+  }
+  await deleteDoc(docRef);
+};
+
+// --- BANNERS, LOGOS, TEAM PV ---
 export const getCarouselImages = async (): Promise<CarouselImage[]> => {
-  const q = query(collection(db, "site_banners"), orderBy("createdAt", "desc"));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, url: d.data().image, ...d.data(), active: true } as any));
+  try {
+    const q = query(collection(db, "site_banners"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => {
+      const data = d.data();
+      return { 
+        id: d.id, 
+        url: data.image, 
+        cloudinary_id: data.cloudinary_id, 
+        title: data.title || '',
+        subtitle: data.subtitle || '',
+        align: data.align || 'center',
+        active: data.active ?? true 
+      } as CarouselImage;
+    });
+  } catch (err) { 
+    console.error("Erro ao buscar banners:", err);
+    return []; 
+  }
 };
 
-export const saveCarouselImage = async (item: any) => {
-  if (item.id && !item.id.startsWith('slide_')) await updateDoc(doc(db, "site_banners", item.id), { ...item, updatedAt: serverTimestamp() });
-  else await addDoc(collection(db, "site_banners"), { ...item, image: item.url, createdAt: serverTimestamp() });
+export const saveCarouselImage = async (item: Partial<CarouselImage>) => {
+  const data = { 
+    image: item.url, 
+    cloudinary_id: item.cloudinary_id, 
+    title: item.title || '', 
+    subtitle: item.subtitle || '', 
+    align: item.align || 'center', 
+    active: item.active ?? true, 
+    updatedAt: serverTimestamp() 
+  };
+  if (item.id) await updateDoc(doc(db, "site_banners", item.id), data);
+  else await addDoc(collection(db, "site_banners"), { ...data, createdAt: serverTimestamp() });
 };
 
-export const deleteCarouselImage = async (id: string) => await deleteDoc(doc(db, "site_banners", id));
+export const deleteCarouselImage = async (id: string) => {
+  const docRef = doc(db, "site_banners", id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    if (data.cloudinary_id) await deleteFromCloudinary(data.cloudinary_id);
+  }
+  await deleteDoc(docRef);
+};
 
 export const getLogos = async (): Promise<Logo[]> => {
-  const q = query(collection(db, "site_logos"), orderBy("createdAt", "desc"));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+  try {
+    const q = query(collection(db, "site_logos"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        nome: data.nome || data.name || '',
+        midia_url: data.midia_url || data.url || '',
+        ativo: data.ativo ?? data.active ?? false,
+        cloudinary_id: data.cloudinary_id || ''
+      } as Logo;
+    });
+  } catch (err) { return []; }
 };
 
-export const saveLogos = async (data: Logo[]) => await addDoc(collection(db, "site_logos"), { ...data[0], active: false, createdAt: serverTimestamp() });
+export const saveLogo = async (logo: Partial<Logo>) => {
+  if (!logo.nome || !logo.midia_url) throw new Error("Preencha Nome e Mídia da Logo");
+  const data = { 
+    nome: logo.nome, 
+    midia_url: logo.midia_url, 
+    cloudinary_id: logo.cloudinary_id || '', 
+    ativo: logo.ativo ?? false, 
+    updatedAt: serverTimestamp() 
+  };
+  if (logo.id) {
+    await updateDoc(doc(db, "site_logos", logo.id), data);
+  } else {
+    await addDoc(collection(db, "site_logos"), { 
+      ...data, 
+      createdAt: serverTimestamp() 
+    });
+  }
+};
 
 export const setActiveLogo = async (id: string) => {
   const logos = await getLogos();
   const batch = writeBatch(db);
-  logos.forEach(l => batch.update(doc(db, "site_logos", l.id), { active: l.id === id }));
+  logos.forEach(l => { 
+    batch.update(doc(db, "site_logos", l.id), { ativo: l.id === id }); 
+  });
   await batch.commit();
 };
 
-export const deleteLogo = async (id: string) => await deleteDoc(doc(db, "site_logos", id));
-
-export const getTeamPVItems = async (): Promise<TeamPVItem[]> => {
-  const q = query(collection(db, "site_teampv"), orderBy("createdAt", "desc"));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, name: d.data().name, image: d.data().url, verified: true }));
+export const deleteLogo = async (id: string) => {
+  const docRef = doc(db, "site_logos", id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    const cid = data.cloudinary_id || data.public_id;
+    if (cid) await deleteFromCloudinary(cid);
+  }
+  await deleteDoc(docRef);
 };
 
-export const saveTeamPVItem = async (item: any) => await addDoc(collection(db, "site_teampv"), { name: item.name, url: item.url, verified: true, createdAt: serverTimestamp() });
-export const deleteTeamPVItem = async (id: string) => await deleteDoc(doc(db, "site_teampv", id));
+export const getTeamPVItems = async (): Promise<TeamPVItem[]> => {
+  try {
+    const q = query(collection(db, "site_teampv"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, name: d.data().name, image: d.data().url, cloudinary_id: d.data().cloudinary_id, verified: true }));
+  } catch (err) { return []; }
+};
 
-export const getSettings = async (): Promise<AppSettings> => (await getSiteConfig()).settings;
-export const saveSettings = async (s: AppSettings) => setLocal(KEYS.SITE_CONFIG, { ...(await getSiteConfig()), settings: s });
+export const saveTeamPVItem = async (item: Partial<TeamPVItem>) => {
+  const data = { name: item.name, url: item.image, cloudinary_id: item.cloudinary_id, verified: true, updatedAt: serverTimestamp() };
+  if (item.id) await updateDoc(doc(db, "site_teampv", item.id), data);
+  else await addDoc(collection(db, "site_teampv"), { ...data, createdAt: serverTimestamp() });
+};
+
+export const deleteTeamPVItem = async (id: string) => {
+  const docRef = doc(db, "site_teampv", id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    if (data.cloudinary_id) await deleteFromCloudinary(data.cloudinary_id);
+  }
+  await deleteDoc(docRef);
+};
+
+export const saveSettings = async (s: AppSettings) => {
+  try {
+    await setDoc(doc(db, "site_config", "general_settings"), s);
+    setLocal(KEYS.SITE_CONFIG, { ...(await getSiteConfig()), settings: s });
+  } catch (err) { console.error("Erro ao salvar settings:", err); }
+};
+
+export const getSettings = async (): Promise<AppSettings> => {
+  const config = await getSiteConfig();
+  return config.settings;
+};

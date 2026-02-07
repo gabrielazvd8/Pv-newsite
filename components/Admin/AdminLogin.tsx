@@ -1,5 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import * as storage from '../../services/storage';
+import { Logo } from '../../types';
 
 interface AdminLoginProps {
   onSuccess: () => void;
@@ -10,6 +12,23 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onCancel }) => {
   const [u, setU] = useState('');
   const [p, setP] = useState('');
   const [error, setError] = useState('');
+  const [activeLogo, setActiveLogo] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const logos = await storage.getLogos();
+        const active = logos.find(l => l.ativo) || logos[0];
+        if (active) {
+          console.log("Logo login:", active.midia_url);
+          setActiveLogo(active.midia_url);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar logo no login:", err);
+      }
+    };
+    loadLogo();
+  }, []);
 
   const handle = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +43,18 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onCancel }) => {
     <div className="fixed inset-0 bg-black flex items-center justify-center p-4 z-[100]">
       <div className="w-full max-w-md bg-zinc-950 p-10 rounded-[40px] border border-zinc-900 shadow-2xl">
         <div className="text-center mb-10">
-           <img src="assets/img/IMG_3069.PNG" alt="PV Sports" className="h-16 mx-auto mb-6" />
+           {activeLogo ? (
+             <img 
+               id="adminLoginLogo"
+               src={activeLogo} 
+               alt="PV Sports" 
+               className="h-16 mx-auto mb-6 object-contain" 
+             />
+           ) : (
+             <div className="h-16 mb-6 flex items-center justify-center">
+                <h1 className="text-2xl font-black italic tracking-tighter text-green-500">PV<span className="text-white">SPORTS</span></h1>
+             </div>
+           )}
            <h2 className="text-xl font-black uppercase tracking-tighter">Área Restrita</h2>
         </div>
         <form onSubmit={handle} className="space-y-6">

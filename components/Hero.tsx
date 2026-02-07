@@ -59,7 +59,7 @@ const Hero: React.FC = () => {
             src={slide.url} 
             className="w-full h-full object-cover transition-transform duration-[10s] ease-linear" 
             style={{ transform: i === current ? 'scale(1.1)' : 'scale(1)' }}
-            alt={slide.title} 
+            alt={slide.title || "PV Sports Banner"} 
           />
           
           <div className={`absolute inset-0 flex flex-col justify-center container mx-auto px-6 md:px-20 z-20 pt-12 ${getAlignClasses(slide.align)}`}>
