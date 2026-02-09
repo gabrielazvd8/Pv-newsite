@@ -85,11 +85,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const handleGenerateAIDescription = async () => {
     const form = document.querySelector('form');
     if (!form) return;
-    const nameInput = form.elements.namedItem('name') as HTMLInputElement;
+
+    const nameInput = form.elements.namedItem('name');
     const name = nameInput?.value;
-    if (!name || name.trim() === '') return alert("Digite o nome para a IA.");
-    
+
+    if (!name || name.trim() === '') {
+      alert("Digite o nome para a IA.");
+      return;
+    }
+
     setIsGeneratingDescription(true);
+
     try {
       const response = await fetch('/api/deepseek', {
         method: 'POST',
@@ -104,18 +110,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       }
 
       const data = await response.json();
-      
-      if (data && data.text) {
-        const descArea = form.elements.namedItem('description') as HTMLTextAreaElement;
-        if (descArea) descArea.value = data.text.trim();
+
+      const aiText = data?.choices?.[0]?.message?.content;
+
+      if (aiText) {
+        const descArea = form.elements.namedItem('description');
+        if (descArea) {
+          descArea.value = aiText.trim();
+        }
+      } else {
+        console.error("Resposta inesperada da IA:", data);
+        alert("A IA não retornou texto.");
       }
-    } catch (err) { 
-      console.error("DeepSeek AI Error:", err); 
-    } finally { 
-      setIsGeneratingDescription(false); 
+
+    } catch (err) {
+      console.error("DeepSeek AI Error:", err);
+      alert("Erro ao gerar descrição com IA.");
+    } finally {
+      setIsGeneratingDescription(false);
     }
   };
-
+  
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'logo' | 'banner' | 'teampv' | 'category' | 'subcategory') => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
