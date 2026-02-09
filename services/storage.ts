@@ -1,5 +1,3 @@
-
-// Fix: Ensure modular imports for Firebase v9+ are correctly resolved
 import { initializeApp } from "firebase/app";
 import { 
   getFirestore, doc, setDoc, getDoc, getDocs, 
@@ -7,14 +5,14 @@ import {
   query, where, orderBy, serverTimestamp, 
   writeBatch 
 } from "firebase/firestore";
-// Fix: Consolidate firebase/auth imports and use type-only import for User to resolve exported member errors
+// Fix: Separated auth value imports and type-only imports to resolve issues with exported member recognition.
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
   onAuthStateChanged, 
-  signOut,
-  type User
+  signOut
 } from "firebase/auth";
+import type { User } from "firebase/auth";
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem } from '../types';
 
 /**
@@ -275,6 +273,13 @@ export const saveProduct = async (p: Partial<Product>) => {
   };
   if (p.id) await updateDoc(doc(db, "site_produtos", p.id), data);
   else await addDoc(collection(db, "site_produtos"), { ...data, criadoEm: serverTimestamp() });
+};
+
+export const updateProductStatus = async (id: string, updates: Partial<Product>) => {
+  await updateDoc(doc(db, "site_produtos", id), {
+    ...updates,
+    atualizadoEm: serverTimestamp()
+  });
 };
 
 export const deleteProduct = async (id: string) => {

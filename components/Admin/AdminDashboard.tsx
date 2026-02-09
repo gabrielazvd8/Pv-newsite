@@ -86,7 +86,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     const form = document.querySelector('form');
     if (!form) return;
 
-    const nameInput = form.elements.namedItem('name');
+    const nameInput = form.elements.namedItem('name') as HTMLInputElement;
     const name = nameInput?.value;
 
     if (!name || name.trim() === '') {
@@ -111,14 +111,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
       const data = await response.json();
 
-      // ✅ valida formato correto
       if (!data || !data.text) {
         console.error("Resposta inesperada da IA:", data);
         alert("A IA não retornou texto.");
         return;
       }
 
-      const descArea = form.elements.namedItem('description');
+      const descArea = form.elements.namedItem('description') as HTMLTextAreaElement;
       if (descArea) {
         descArea.value = data.text.trim();
       }
@@ -128,6 +127,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       alert("Erro ao gerar descrição com IA.");
     } finally {
       setIsGeneratingDescription(false);
+    }
+  };
+
+  const handleToggleStatus = async (id: string, field: 'isPromo' | 'isLancamento' | 'isProntaEntrega', currentVal: boolean) => {
+    try {
+      await storage.updateProductStatus(id, { [field]: !currentVal });
+      await loadData();
+      onUpdate();
+    } catch (err) {
+      alert("Erro ao atualizar status: " + err);
     }
   };
 
@@ -300,6 +309,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     }
   };
 
+  const activeProducts = products.filter(p => p.ativo !== false);
+
   if (isVerifying) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[500]">
@@ -351,7 +362,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                 <h2 className="text-xl font-black mb-8 italic uppercase">{editingItem ? 'Editar' : 'Criar'} {tab}</h2>
                 <form onSubmit={tab === 'products' ? handleSaveProduct : tab === 'subcategories' ? handleSaveSubcategory : (e: any) => {
                   e.preventDefault();
-                  const fd = new FormData(e.target);
+                  const fd = new FormData(e.target as HTMLFormElement);
                   storage.saveCategory({ id: editingItem?.id, nome: fd.get('nome') as string, midia: currentGallery[0]?.url, cloudinary_id: currentGallery[0]?.cid, ativo: fd.get('ativo') === 'on' })
                     .then(() => { resetForm(); loadData(); onUpdate(); });
                 }} className="space-y-6">
@@ -398,9 +409,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <input type="text" name="price" placeholder="Preço (R$)" defaultValue={editingItem?.price} className="bg-black border border-zinc-800 p-4 rounded-xl text-sm" />
-                        <div className="flex gap-4 items-center px-4 bg-black border border-zinc-800 rounded-xl">
-                           <label className="text-[8px] uppercase font-black"><input type="checkbox" name="isPromo" defaultChecked={editingItem?.isPromo} /> PROMO</label>
-                           <label className="text-[8px] uppercase font-black"><input type="checkbox" name="isProntaEntrega" defaultChecked={editingItem?.isProntaEntrega} /> PRONTA</label>
+                        <div className="flex flex-col gap-2 p-4 bg-black border border-zinc-800 rounded-xl">
+                           <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isPromo" defaultChecked={editingItem?.isPromo} className="accent-red-500" /> PROMO</label>
+                           <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isLancamento" defaultChecked={editingItem?.isLancamento} className="accent-white" /> LANÇAMENTO</label>
+                           <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isProntaEntrega" defaultChecked={editingItem?.isProntaEntrega} className="accent-green-500" /> PRONTA</label>
                         </div>
                       </div>
                     </>
@@ -425,18 +437,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             </div>
             
             <div className="lg:col-span-7 space-y-4">
-              {(tab === 'products' ? products : tab === 'categories' ? categories : subcategories).map((item: any) => (
-                <div key={item.id} className="bg-zinc-950 p-6 border border-zinc-900 rounded-3xl flex items-center justify-between hover:border-zinc-700 transition-all">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 overflow-hidden border border-zinc-800 bg-black ${tab === 'subcategories' ? 'rounded-full' : 'rounded-lg'}`}>
+              {(tab === 'products' ? activeProducts : tab === 'categories' ? categories : subcategories).map((item: any) => (
+                <div key={item.id} className="bg-zinc-950 p-6 border border-zinc-900 rounded-3xl flex flex-col md:flex-row items-center justify-between hover:border-zinc-700 transition-all gap-4">
+                  <div className="flex items-center gap-4 w-full">
+                    <div className={`w-12 h-12 overflow-hidden border border-zinc-800 bg-black flex-shrink-0 ${tab === 'subcategories' ? 'rounded-full' : 'rounded-lg'}`}>
                        <img src={item.midia || item.images?.[0]} className="w-full h-full object-cover" />
                     </div>
-                    <div>
+                    <div className="flex-grow">
                       <h4 className="text-[11px] font-black uppercase italic tracking-tighter">{item.nome || item.name}</h4>
                       {item.categoriaNome && <p className="text-[8px] uppercase font-black text-zinc-600">{item.categoriaNome}</p>}
+                      
+                      {/* Botões de Status Rápido na Lista */}
+                      {tab === 'products' && (
+                        <div className="flex gap-2 mt-2">
+                          <button 
+                            onClick={() => handleToggleStatus(item.id, 'isPromo', item.isPromo)}
+                            className={`px-2 py-1 rounded-full text-[7px] font-black uppercase tracking-tighter border transition-all ${item.isPromo ? 'bg-red-500 text-white border-red-500' : 'bg-transparent text-zinc-700 border-zinc-800 hover:border-red-500/50'}`}
+                          >
+                            Promo
+                          </button>
+                          <button 
+                            onClick={() => handleToggleStatus(item.id, 'isLancamento', item.isLancamento)}
+                            className={`px-2 py-1 rounded-full text-[7px] font-black uppercase tracking-tighter border transition-all ${item.isLancamento ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-700 border-zinc-800 hover:border-white/50'}`}
+                          >
+                            Novo
+                          </button>
+                          <button 
+                            onClick={() => handleToggleStatus(item.id, 'isProntaEntrega', item.isProntaEntrega)}
+                            className={`px-2 py-1 rounded-full text-[7px] font-black uppercase tracking-tighter border transition-all ${item.isProntaEntrega ? 'bg-green-500 text-black border-green-500' : 'bg-transparent text-zinc-700 border-zinc-800 hover:border-green-500/50'}`}
+                          >
+                            Pronta
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full md:w-auto justify-end">
                     <button onClick={() => startEdit(item)} className="p-3 bg-zinc-900 rounded-xl text-zinc-400 hover:text-white">✏️</button>
                     <button onClick={() => handleDelete(item.id, tab.slice(0, -1) as any)} className="p-3 bg-zinc-900 rounded-xl text-zinc-400 hover:text-red-500">🗑️</button>
                   </div>

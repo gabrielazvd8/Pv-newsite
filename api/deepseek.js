@@ -23,11 +23,11 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: "Você é um especialista em descrições profissionais de camisas esportivas."
+            content: "Você é um especialista em descrições profissionais de camisas esportivas - para loja PV Sports."
           },
           {
             role: "user",
-            content: `Crie uma descrição curta, profissional e vendedora para a camisa: ${prompt}`
+            content: `Crie uma descrição curta, profissional e vendedora, sem caracteres especiais para a camisa: ${prompt}`
           }
         ],
         temperature: 0.7,
