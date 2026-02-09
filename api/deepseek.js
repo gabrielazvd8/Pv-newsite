@@ -10,54 +10,43 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Prompt vazio' });
     }
 
-    if (!process.env.DEEPSEEK_API_KEY) {
-      console.error("API KEY NÃO ENCONTRADA");
-      return res.status(500).json({ error: 'DEEPSEEK_API_KEY não definida' });
-    }
-
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+        "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://usepvsports.vercel.app",
+        "X-Title": "PV Sports AI"
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: "deepseek/deepseek-chat",
         messages: [
           {
-            role: 'system',
-            content: 'Você é especialista em e-commerce esportivo.',
+            role: "system",
+            content: "Você é um especialista em descrições profissionais de camisas esportivas."
           },
           {
-            role: 'user',
-            content: `Crie uma descrição curta e vendedora para: ${prompt}`,
-          },
+            role: "user",
+            content: `Crie uma descrição curta, profissional e vendedora para a camisa: ${prompt}`
+          }
         ],
         temperature: 0.7,
-      }),
+        max_tokens: 180
+      })
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
-      console.error("DEEPSEEK RESPONSE ERROR:", data);
+    if (!data.choices || !data.choices[0]) {
       return res.status(500).json({ error: data });
     }
 
-    const text =
-      data?.choices?.[0]?.message?.content ||
-      data?.choices?.[0]?.text ||
-      null;
-
-    if (!text) {
-      console.error("SEM TEXTO:", data);
-      return res.status(500).json({ error: 'IA não retornou texto', raw: data });
-    }
-
-    return res.status(200).json({ text });
+    res.status(200).json({
+      text: data.choices[0].message.content
+    });
 
   } catch (err) {
-    console.error("SERVER ERROR:", err);
-    return res.status(500).json({ error: err.message });
+    console.error("DeepSeek error:", err);
+    res.status(500).json({ error: "Erro interno IA" });
   }
 }
