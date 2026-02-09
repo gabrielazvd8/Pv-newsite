@@ -111,17 +111,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
       const data = await response.json();
 
-      const aiText = data?.choices?.[0]?.message?.content;
+      // ✅ valida formato correto
+      if (!data || !data.text) {
+        console.error("Resposta inesperada da IA:", data);
+        alert("A IA não retornou texto.");
+        return;
+      }
 
-    if (!data?.text) {
-      alert("A IA não retornou texto.");
-      return;
-    }
-
-    const descArea = form.elements.namedItem('description');
-    if (descArea) {
-      descArea.value = data.text.trim();
-    }
+      const descArea = form.elements.namedItem('description');
+      if (descArea) {
+        descArea.value = data.text.trim();
+      }
 
     } catch (err) {
       console.error("DeepSeek AI Error:", err);
@@ -130,7 +130,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       setIsGeneratingDescription(false);
     }
   };
-  
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'logo' | 'banner' | 'teampv' | 'category' | 'subcategory') => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
