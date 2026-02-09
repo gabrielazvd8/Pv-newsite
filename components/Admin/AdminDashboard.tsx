@@ -3,8 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as storage from '../../services/storage';
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem } from '../../types';
 import { GoogleGenAI } from "@google/genai";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../services/storage";
+import { auth, onAuthStateChanged } from "../../services/storage";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -40,7 +39,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const multiFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Protetor de Sessão
+    // Protetor de Sessão (usando onAuthStateChanged exportado do storage service)
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         onLogout();
@@ -90,11 +89,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     if (!name || name.trim() === '') return alert("Digite o nome para a IA.");
     setIsGeneratingDescription(true);
     try {
+      // Re-initialize Gemini client to ensure fresh context if needed
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Crie uma descrição comercial curta para "${name}". Máximo 60 palavras.`,
       });
+      // Correct extraction of text using .text property
       const text = response.text;
       if (text) {
         const descArea = form.elements.namedItem('description') as HTMLTextAreaElement;

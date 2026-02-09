@@ -11,8 +11,7 @@ import CategoryCarousel from './components/CategoryCarousel';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminLogin from './components/Admin/AdminLogin';
 import TeamPVSection from './components/TeamPVSection';
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./services/storage";
+import { auth, onAuthStateChanged } from "./services/storage";
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('store');
@@ -41,7 +40,7 @@ const App: React.FC = () => {
   useEffect(() => {
     loadAppData();
     
-    // Escutador de Sessão Firebase
+    // Escutador de Sessão Firebase (usando onAuthStateChanged exportado do storage service)
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const hasAccess = await storage.checkAdminAccess(user);

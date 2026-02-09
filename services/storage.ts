@@ -11,7 +11,7 @@ import {
   signInWithEmailAndPassword, 
   onAuthStateChanged, 
   signOut,
-  User
+  type User
 } from "firebase/auth";
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem } from '../types';
 
@@ -28,7 +28,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-export { auth };
+// Exporting modular members from services/storage to prevent cross-file import issues in some environments
+export { auth, onAuthStateChanged };
+export type { User };
 
 /**
  * VALIDAÇÃO DE ACESSO ADMIN
