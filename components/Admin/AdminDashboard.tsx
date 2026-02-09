@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as storage from '../../services/storage';
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem } from '../../types';
-import { GoogleGenAI } from "@google/genai";
+// Fix: Import onAuthStateChanged and auth exclusively from storage service to resolve environment-specific export issues
 import { auth, onAuthStateChanged } from "../../services/storage";
 
 interface AdminDashboardProps {
@@ -81,27 +81,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     } catch (err) { console.error("Erro ao carregar dados ADM:", err); }
   };
 
+  // Using DeepSeek API via internal route to generate professional product descriptions
   const handleGenerateAIDescription = async () => {
     const form = document.querySelector('form');
     if (!form) return;
     const nameInput = form.elements.namedItem('name') as HTMLInputElement;
     const name = nameInput?.value;
     if (!name || name.trim() === '') return alert("Digite o nome para a IA.");
+    
     setIsGeneratingDescription(true);
     try {
-      // Re-initialize Gemini client to ensure fresh context if needed
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `Crie uma descrição comercial curta para "${name}". Máximo 60 palavras.`,
+      const response = await fetch('/api/deepseek', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: name }),
       });
-      // Correct extraction of text using .text property
-      const text = response.text;
-      if (text) {
-        const descArea = form.elements.namedItem('description') as HTMLTextAreaElement;
-        if (descArea) descArea.value = text.trim();
+
+      if (!response.ok) {
+        throw new Error('Falha na resposta do servidor /api/deepseek');
       }
-    } catch (err) { console.error("AI Error:", err); } finally { setIsGeneratingDescription(false); }
+
+      const data = await response.json();
+      
+      if (data && data.text) {
+        const descArea = form.elements.namedItem('description') as HTMLTextAreaElement;
+        if (descArea) descArea.value = data.text.trim();
+      }
+    } catch (err) { 
+      console.error("DeepSeek AI Error:", err); 
+    } finally { 
+      setIsGeneratingDescription(false); 
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'logo' | 'banner' | 'teampv' | 'category' | 'subcategory') => {
@@ -348,7 +360,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                       <div className="space-y-1">
                         <div className="flex justify-between items-center px-2">
                            <label className="text-[9px] uppercase font-black text-zinc-600">Descrição</label>
-                           <button type="button" onClick={handleGenerateAIDescription} className="text-[9px] font-black text-green-500 uppercase">✨ IA</button>
+                           <button 
+                             type="button" 
+                             onClick={handleGenerateAIDescription} 
+                             disabled={isGeneratingDescription}
+                             className="text-[9px] font-black text-green-500 uppercase disabled:opacity-50 transition-all hover:scale-105"
+                           >
+                             {isGeneratingDescription ? '✨ Gerando...' : '✨ IA'}
+                           </button>
                         </div>
                         <textarea name="description" defaultValue={editingItem?.description} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-xl h-24 focus:border-green-500 outline-none" />
                       </div>

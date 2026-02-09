@@ -1,4 +1,5 @@
 
+// Fix: Ensure modular imports for Firebase v9+ are correctly resolved
 import { initializeApp } from "firebase/app";
 import { 
   getFirestore, doc, setDoc, getDoc, getDocs, 
@@ -6,6 +7,7 @@ import {
   query, where, orderBy, serverTimestamp, 
   writeBatch 
 } from "firebase/firestore";
+// Fix: Consolidate firebase/auth imports and use type-only import for User to resolve exported member errors
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
