@@ -11,6 +11,8 @@ import CategoryCarousel from './components/CategoryCarousel';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminLogin from './components/Admin/AdminLogin';
 import TeamPVSection from './components/TeamPVSection';
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./services/storage";
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('store');
@@ -37,15 +39,25 @@ const App: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
-    const initApp = async () => {
-      await loadAppData();
-      const auth = sessionStorage.getItem('pv_admin_auth');
-      if (auth === 'true') setIsAuthenticated(true);
-      const handleScroll = () => setIsScrolled(window.scrollY > 150);
-      window.addEventListener('scroll', handleScroll);
-      return () => window.removeEventListener('scroll', handleScroll);
+    loadAppData();
+    
+    // Escutador de Sessão Firebase
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const hasAccess = await storage.checkAdminAccess(user);
+        setIsAuthenticated(hasAccess);
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
+
+    const handleScroll = () => setIsScrolled(window.scrollY > 150);
+    window.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      unsubscribe();
     };
-    initApp();
   }, []);
 
   const loadAppData = async () => {
@@ -89,6 +101,12 @@ const App: React.FC = () => {
     setActiveCategory('All');
     setActiveSubcategory('All');
     window.scrollTo({top: 0, behavior: 'smooth'});
+  };
+
+  const handleLogout = async () => {
+    await storage.logoutAdmin();
+    setIsAuthenticated(false);
+    setView('store');
   };
 
   return (
@@ -183,8 +201,8 @@ const App: React.FC = () => {
           <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
         </>
       )}
-      {view === 'login' && <AdminLogin onSuccess={() => { setIsAuthenticated(true); setView('admin'); sessionStorage.setItem('pv_admin_auth', 'true'); }} onCancel={() => setView('store')} />}
-      {view === 'admin' && <AdminDashboard onLogout={() => { setIsAuthenticated(false); setView('store'); sessionStorage.removeItem('pv_admin_auth'); }} onBack={() => setView('store')} onUpdate={loadAppData} />}
+      {view === 'login' && <AdminLogin onSuccess={() => { setIsAuthenticated(true); setView('admin'); }} onCancel={() => setView('store')} />}
+      {view === 'admin' && <AdminDashboard onLogout={handleLogout} onBack={() => setView('store')} onUpdate={loadAppData} />}
     </div>
   );
 };

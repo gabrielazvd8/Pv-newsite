@@ -6,6 +6,13 @@ import {
   query, where, orderBy, serverTimestamp, 
   writeBatch 
 } from "firebase/firestore";
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  onAuthStateChanged, 
+  signOut,
+  User
+} from "firebase/auth";
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem } from '../types';
 
 /**
@@ -19,6 +26,50 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+
+export { auth };
+
+/**
+ * VALIDAÇÃO DE ACESSO ADMIN
+ */
+export const checkAdminAccess = async (user: User | null): Promise<boolean> => {
+  if (!user) return false;
+  try {
+    const adminRef = doc(db, "site_admin", user.uid);
+    const adminSnap = await getDoc(adminRef);
+    
+    if (adminSnap.exists() && adminSnap.data().active === true) {
+      return true;
+    }
+    
+    // Se não for admin ativo, desloga
+    await signOut(auth);
+    return false;
+  } catch (error) {
+    console.error("Erro ao validar acesso admin:", error);
+    await signOut(auth);
+    return false;
+  }
+};
+
+export const loginAdmin = async (email: string, pass: string): Promise<boolean> => {
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+    const isAdmin = await checkAdminAccess(userCredential.user);
+    if (!isAdmin) {
+      throw new Error("Acesso não autorizado");
+    }
+    return true;
+  } catch (error: any) {
+    console.error("Login Error:", error.message);
+    throw error;
+  }
+};
+
+export const logoutAdmin = async () => {
+  await signOut(auth);
+};
 
 /**
  * CONFIGURAÇÃO CLOUDINARY
@@ -57,7 +108,6 @@ const setLocal = (key: string, data: any) => localStorage.setItem(key, JSON.stri
 
 export const deleteFromCloudinary = async (public_id: string, resourceType: 'image' | 'video' = 'image'): Promise<boolean> => {
   if (!public_id) return true;
-  console.log(`Cloudinary DELETE Request: ${public_id} (${resourceType})`);
   try {
     const destroyUrl = CLOUDINARY_CONFIG.API_ENDPOINT
       .replace('/image/', `/${resourceType}/`)

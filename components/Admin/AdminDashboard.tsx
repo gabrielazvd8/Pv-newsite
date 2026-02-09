@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as storage from '../../services/storage';
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem } from '../../types';
 import { GoogleGenAI } from "@google/genai";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../services/storage";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -11,6 +13,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpdate }) => {
+  const [isVerifying, setIsVerifying] = useState(true);
   const [tab, setTab] = useState<'products' | 'categories' | 'subcategories' | 'settings'>('products');
   const [subTab, setSubTab] = useState<'sections' | 'carousel' | 'logo' | 'teampv'>('sections');
   
@@ -37,8 +40,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const multiFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    // Protetor de Sessão
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        onLogout();
+        return;
+      }
+      
+      const hasAccess = await storage.checkAdminAccess(user);
+      if (!hasAccess) {
+        alert("Sua permissão de administrador foi revogada.");
+        onLogout();
+        return;
+      }
+      
+      setIsVerifying(false);
+      loadData();
+    });
+
+    return () => unsubscribe();
+  }, [onLogout]);
 
   const loadData = async () => {
     try {
@@ -250,6 +271,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       setCurrentGallery([{url: item.midia || item.url || item.image, cid: item.cloudinary_id || ''}]);
     }
   };
+
+  if (isVerifying) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[500]">
+        <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-[10px] uppercase font-black tracking-widest text-zinc-500">Autenticando Sessão...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-black text-white">
