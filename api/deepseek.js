@@ -10,6 +10,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Prompt vazio' });
     }
 
+    if (!process.env.DEEPSEEK_API_KEY) {
+      console.error("API KEY NÃO ENCONTRADA");
+      return res.status(500).json({ error: 'DEEPSEEK_API_KEY não definida' });
+    }
+
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -21,11 +26,11 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: 'Você é um especialista em e-commerce esportivo.',
+            content: 'Você é especialista em e-commerce esportivo.',
           },
           {
             role: 'user',
-            content: `Crie uma descrição profissional, curta e vendedora para: ${prompt}`,
+            content: `Crie uma descrição curta e vendedora para: ${prompt}`,
           },
         ],
         temperature: 0.7,
@@ -35,14 +40,24 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('DeepSeek error:', data);
+      console.error("DEEPSEEK RESPONSE ERROR:", data);
       return res.status(500).json({ error: data });
     }
 
-    res.status(200).json(data);
+    const text =
+      data?.choices?.[0]?.message?.content ||
+      data?.choices?.[0]?.text ||
+      null;
+
+    if (!text) {
+      console.error("SEM TEXTO:", data);
+      return res.status(500).json({ error: 'IA não retornou texto', raw: data });
+    }
+
+    return res.status(200).json({ text });
 
   } catch (err) {
-    console.error('Server error:', err);
-    res.status(500).json({ error: err.message });
+    console.error("SERVER ERROR:", err);
+    return res.status(500).json({ error: err.message });
   }
 }
