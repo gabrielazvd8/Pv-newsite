@@ -113,15 +113,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
       const aiText = data?.choices?.[0]?.message?.content;
 
-      if (aiText) {
-        const descArea = form.elements.namedItem('description');
-        if (descArea) {
-          descArea.value = aiText.trim();
-        }
-      } else {
-        console.error("Resposta inesperada da IA:", data);
-        alert("A IA não retornou texto.");
-      }
+    if (!data?.text) {
+      alert("A IA não retornou texto.");
+      return;
+    }
+
+    const descArea = form.elements.namedItem('description');
+    if (descArea) {
+      descArea.value = data.text.trim();
+    }
 
     } catch (err) {
       console.error("DeepSeek AI Error:", err);
