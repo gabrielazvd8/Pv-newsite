@@ -1,3 +1,4 @@
+/** @AI_LOCKED */
 
 import React, { useState, useEffect, useRef } from 'react';
 import * as storage from '../../services/storage';
@@ -81,6 +82,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     } catch (err) { console.error("Erro ao carregar dados ADM:", err); }
   };
 
+/* ===== 🔒 BLOCO PROTEGIDO ===== */
+/* NÃO MODIFICAR ESTE TRECHO */
+
   // Using DeepSeek API via internal route to generate professional product descriptions
   const handleGenerateAIDescription = async () => {
     const form = document.querySelector('form');
@@ -129,6 +133,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       setIsGeneratingDescription(false);
     }
   };
+
+/* ===== 🔒 FIM BLOCO PROTEGIDO ===== */
 
   const handleToggleStatus = async (id: string, field: 'isPromo' | 'isLancamento' | 'isProntaEntrega', currentVal: boolean) => {
     try {
@@ -427,8 +433,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                       {currentGallery.map((img, i) => (
                         <div key={i} className={`relative aspect-square overflow-hidden border border-zinc-800 ${tab === 'subcategories' ? 'rounded-full' : 'rounded-lg'}`}>
                            <img src={img.url} className="w-full h-full object-cover" />
+                           <button 
+                             type="button"
+                             onClick={() => setCurrentGallery(prev => prev.filter((_, idx) => idx !== i))}
+                             className="absolute top-1 right-1 bg-red-600/80 hover:bg-red-600 text-white rounded-full p-1 transition-all z-20"
+                           >
+                             <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                           </button>
                         </div>
                       ))}
+                      {currentVideo && tab === 'products' && (
+                        <div className="relative aspect-square overflow-hidden border border-zinc-800 rounded-lg bg-zinc-900 flex items-center justify-center">
+                           <svg className="w-8 h-8 text-zinc-700" fill="currentColor" viewBox="0 0 24 24"><path d="M10 15.5l6-3.5-6-3.5v7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                           <button 
+                             type="button"
+                             onClick={() => setCurrentVideo(null)}
+                             className="absolute top-1 right-1 bg-red-600/80 hover:bg-red-600 text-white rounded-full p-1 transition-all z-20"
+                           >
+                             <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                           </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <button type="submit" className="w-full bg-green-500 text-black py-5 text-[10px] font-black uppercase rounded-xl hover:scale-105 active:scale-95 transition-all">Salvar {tab}</button>

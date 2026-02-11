@@ -1,3 +1,10 @@
+/** @AI_LOCKED */
+
+// ===== 🔒 IA LOCKED FILE =====
+// Este arquivo não pode ser modificado pela IA.
+// Somente leitura permitida.
+// =============================
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });

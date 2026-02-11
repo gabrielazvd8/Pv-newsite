@@ -197,6 +197,24 @@ const App: React.FC = () => {
                <p className="text-zinc-800 text-[9px] uppercase tracking-[0.8em] font-black italic">PV Sports Heritage &mdash; Estilo de Elite &copy; {currentYear}</p>
             </div>
           </footer>
+
+          {/* Botão Flutuante do WhatsApp */}
+          <a 
+            href="https://wa.me/5584998538567?text=Olá%20PV,%20gostaria%20de%20tirar%20uma%20dúvida!"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="fixed bottom-8 right-8 z-[100] bg-[#25D366] p-4 rounded-full shadow-[0_10px_40px_rgba(37,211,102,0.4)] hover:scale-110 transition-all active:scale-95 group"
+            aria-label="Atendimento WhatsApp"
+          >
+            <svg 
+              className="w-8 h-8 text-white animate-[pulse_3s_infinite]" 
+              fill="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.025 3.107l-.694 2.537 2.59-.68c.767.415 1.748.796 2.847.796 3.181 0 5.767-2.586 5.768-5.766 0-3.18-2.586-5.76-5.768-5.76zm3.377 8.272c-.14.393-.7.712-1.147.76-.32.033-.733.053-1.18-.093-.277-.093-.637-.215-1.077-.41-1.85-.807-3.047-2.7-3.14-2.827-.093-.126-.76-.993-.76-1.893 0-.9.467-1.34.633-1.527.167-.187.367-.233.49-.233h.353c.113 0 .26.013.407.34.167.387.573 1.4.627 1.507.053.113.087.24.013.387-.073.14-.113.22-.227.353-.113.133-.24.3-.34.407-.113.12-.233.253-.1.48.133.227.593.973 1.273 1.58.873.78 1.607 1.02 1.833 1.133.227.113.36.093.493-.06.133-.153.573-.667.727-.893.153-.227.307-.187.52-.107.213.08 1.353.64 1.587.753.233.113.387.167.447.267.06.1.06.58-.14.973z"/>
+            </svg>
+          </a>
+
           <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
         </>
       )}
