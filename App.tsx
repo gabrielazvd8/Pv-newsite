@@ -1,3 +1,4 @@
+/** @AI_LOCKED */
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Product, AppView, Category, Subcategory, AppSettings, Logo, TeamPVItem } from './types';
@@ -189,13 +190,36 @@ const App: React.FC = () => {
                <img src={activeLogo?.midia_url || "assets/img/IMG_3069.PNG"} alt="PV Sports" className="h-24 md:h-32 object-contain" />
             </div>
             <div className="flex justify-center gap-16 mb-24">
-              {['Instagram', 'WhatsApp'].map(item => (
-                <span key={item} className="text-[10px] uppercase tracking-[0.5em] text-zinc-700 hover:text-green-500 cursor-pointer font-black italic">{item}</span>
-              ))}
+              <a 
+                href="https://www.instagram.com/pvsports16/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[10px] uppercase tracking-[0.5em] text-zinc-700 hover:text-green-500 cursor-pointer font-black italic transition-colors"
+              >
+                Instagram
+              </a>
+              <a 
+                href="https://wa.me/5584998538567" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[10px] uppercase tracking-[0.5em] text-zinc-700 hover:text-green-500 cursor-pointer font-black italic transition-colors"
+              >
+                WhatsApp
+              </a>
             </div>
+
             <div className="container mx-auto px-4 border-t border-zinc-900 pt-16">
-               <p className="text-zinc-800 text-[9px] uppercase tracking-[0.8em] font-black italic">PV Sports Heritage &mdash; Estilo de Elite &copy; {currentYear}</p>
+               <p className="text-zinc-800 text-[9px] uppercase tracking-[0.8em] font-black italic">PV Sports (since 2021) &mdash; Estilo de Elite &copy; {currentYear}</p>
+               <a 
+                 href="https://www.instagram.com/azvd.ai/" 
+                 target="_blank" 
+                 rel="noopener noreferrer" 
+                 className="mt-6 block text-zinc-900 text-[10px] uppercase tracking-[0.4em] font-black hover:text-green-500 transition-colors"
+               >
+                 Feito por: AZVD.ai - Desenvolvedor: Gabriel Azevedo
+               </a>
             </div>
+
           </footer>
 
           {/* Botão Flutuante do WhatsApp */}
@@ -218,6 +242,7 @@ const App: React.FC = () => {
           <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
         </>
       )}
+
       {view === 'login' && <AdminLogin onSuccess={() => { setIsAuthenticated(true); setView('admin'); }} onCancel={() => setView('store')} />}
       {view === 'admin' && <AdminDashboard onLogout={handleLogout} onBack={() => setView('store')} onUpdate={loadAppData} />}
     </div>
