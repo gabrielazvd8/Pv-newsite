@@ -15,7 +15,7 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpdate }) => {
   const [isVerifying, setIsVerifying] = useState(true);
   const [tab, setTab] = useState<'products' | 'categories' | 'subcategories' | 'settings'>('products');
-  const [subTab, setSubTab] = useState<'sections' | 'carousel' | 'logo' | 'teampv'>('sections');
+  const [subTab, setSubTab] = useState<'sections' | 'carrossel' | 'logo' | 'teampv'>('sections');
   
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Product } from '../types';
 
@@ -8,6 +7,9 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
+  // Respect inactive status by not rendering the card
+  if (product.ativo === false) return null;
+
   const secondImage = product.images && product.images.length > 1 ? product.images[1] : null;
 
   return (
@@ -66,7 +68,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
         <div className="flex justify-between items-start gap-4">
           <div className="space-y-1">
             <span className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em]">
-              {product.categoryId === 'cat1' ? 'Internacional' : 'Nacional'}
+              {product.categoryName || 'Produto'}
             </span>
             <h3 className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors uppercase tracking-tight">
               {product.name}

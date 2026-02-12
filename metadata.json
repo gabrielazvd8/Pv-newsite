@@ -1,4 +1,5 @@
 {
   "name": "PV Sports",
-  "description": "A high-end, dark-mode showcase for football shirts with a built-in administrative panel."
+  "description": "A high-end, dark-mode showcase for football shirts with a built-in administrative panel.",
+  "requestFramePermissions": []
 }

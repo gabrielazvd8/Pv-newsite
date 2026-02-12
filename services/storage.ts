@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { 
-  getFirestore, doc, setDoc, getDoc, getDocs, 
+  initializeFirestore, doc, setDoc, getDoc, getDocs, 
   collection, addDoc, updateDoc, deleteDoc, 
   query, where, orderBy, serverTimestamp, 
   writeBatch 
@@ -25,7 +25,16 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+
+/**
+ * INITIALIZATION WITH LONG POLLING
+ * Fix: Enabled long polling to bypass network restrictions that cause 
+ * "Could not reach Cloud Firestore backend" errors.
+ */
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
+
 const auth = getAuth(app);
 
 // Exporting modular members from services/storage to prevent cross-file import issues in some environments
@@ -171,10 +180,18 @@ export const uploadToCloudinary = async (file: File, type: 'logo' | 'banner' | '
 // --- CATEGORIAS ---
 export const getCategories = async (onlyActive = false): Promise<Category[]> => {
   try {
-    const q = query(collection(db, "site_categorias"), orderBy("criadoEm", "desc"));
+    const q = query(collection(db, "site_categorias"));
     const snap = await getDocs(q);
     const allCategories = snap.docs.map(d => ({ id: d.id, ...d.data() } as Category));
-    return onlyActive ? allCategories.filter(cat => cat.ativo === true) : allCategories;
+    
+    // Sort in memory to avoid missing index errors
+    const sorted = allCategories.sort((a, b) => {
+      const dateA = a.criadoEm?.seconds || 0;
+      const dateB = b.criadoEm?.seconds || 0;
+      return dateB - dateA;
+    });
+
+    return onlyActive ? sorted.filter(cat => cat.ativo === true) : sorted;
   } catch (err) {
     console.error("Erro ao buscar categorias:", err);
     return [];
@@ -201,10 +218,14 @@ export const deleteCategory = async (id: string) => {
 // --- SUBCATEGORIAS ---
 export const getSubcategories = async (onlyActive = false): Promise<Subcategory[]> => {
   try {
-    const q = query(collection(db, "site_subcategorias"), orderBy("nome", "asc"));
+    const q = query(collection(db, "site_subcategorias"));
     const snap = await getDocs(q);
     const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Subcategory));
-    return onlyActive ? all.filter(s => s.ativo) : all;
+    
+    // Sort in memory by name
+    const sorted = all.sort((a, b) => a.nome.localeCompare(b.nome));
+    
+    return onlyActive ? sorted.filter(s => s.ativo) : sorted;
   } catch (err) {
     console.error("Erro ao buscar subcategorias:", err);
     return [];
@@ -240,9 +261,16 @@ export const deleteSubcategory = async (id: string) => {
 // --- PRODUTOS ---
 export const getProducts = async (): Promise<Product[]> => {
   try {
-    const q = query(collection(db, "site_produtos"), orderBy("criadoEm", "desc"));
+    const q = query(collection(db, "site_produtos"));
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+    
+    // Sort in memory by creation date
+    return all.sort((a, b) => {
+      const dateA = a.criadoEm?.seconds || 0;
+      const dateB = b.criadoEm?.seconds || 0;
+      return dateB - dateA;
+    });
   } catch (err) {
     console.error("Erro ao buscar produtos:", err);
     return [];
@@ -298,9 +326,9 @@ export const deleteProduct = async (id: string) => {
 // --- BANNERS, LOGOS, TEAM PV ---
 export const getCarouselImages = async (): Promise<CarouselImage[]> => {
   try {
-    const q = query(collection(db, "site_banners"), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "site_banners"));
     const snap = await getDocs(q);
-    return snap.docs.map(d => {
+    const all = snap.docs.map(d => {
       const data = d.data();
       return { 
         id: d.id, 
@@ -309,9 +337,12 @@ export const getCarouselImages = async (): Promise<CarouselImage[]> => {
         title: data.title || '',
         subtitle: data.subtitle || '',
         align: data.align || 'center',
-        active: data.active ?? true 
+        active: data.active ?? true,
+        createdAt: data.createdAt
       } as CarouselImage;
     });
+    
+    return all.sort((a, b) => (b as any).createdAt?.seconds - (a as any).createdAt?.seconds);
   } catch (err) { 
     console.error("Erro ao buscar banners:", err);
     return []; 
@@ -344,7 +375,7 @@ export const deleteCarouselImage = async (id: string) => {
 
 export const getLogos = async (): Promise<Logo[]> => {
   try {
-    const q = query(collection(db, "site_logos"), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "site_logos"));
     const snap = await getDocs(q);
     return snap.docs.map(d => {
       const data = d.data();
@@ -400,7 +431,7 @@ export const deleteLogo = async (id: string) => {
 
 export const getTeamPVItems = async (): Promise<TeamPVItem[]> => {
   try {
-    const q = query(collection(db, "site_teampv"), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "site_teampv"));
     const snap = await getDocs(q);
     return snap.docs.map(d => ({ id: d.id, name: d.data().name, image: d.data().url, cloudinary_id: d.data().cloudinary_id, verified: true }));
   } catch (err) { return []; }
