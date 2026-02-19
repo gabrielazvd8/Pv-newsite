@@ -1,3 +1,4 @@
+
 /** @AI_LOCKED */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -15,7 +16,8 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpdate }) => {
   const [isVerifying, setIsVerifying] = useState(true);
   const [tab, setTab] = useState<'products' | 'categories' | 'subcategories' | 'settings'>('products');
-  const [subTab, setSubTab] = useState<'sections' | 'carrossel' | 'logo' | 'teampv'>('sections');
+  // Fix: Renamed 'carrossel' to 'carousel' in the state type to match comparisons and ID usage
+  const [subTab, setSubTab] = useState<'sections' | 'carousel' | 'logo' | 'teampv'>('sections');
   
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -444,7 +446,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                       ))}
                       {currentVideo && tab === 'products' && (
                         <div className="relative aspect-square overflow-hidden border border-zinc-800 rounded-lg bg-zinc-900 flex items-center justify-center">
-                           <svg className="w-8 h-8 text-zinc-700" fill="currentColor" viewBox="0 0 24 24"><path d="M10 15.5l6-3.5-6-3.5v7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                           <svg className="w-8 h-8 text-zinc-700" fill="currentColor" viewBox="0 0 24 24"><path d="M10 15.5l6-3.5-6-3.5v7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8-8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
                            <button 
                              type="button"
                              onClick={() => setCurrentVideo(null)}

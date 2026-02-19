@@ -1,3 +1,4 @@
+
 import { initializeApp } from "firebase/app";
 import { 
   initializeFirestore, doc, setDoc, getDoc, getDocs, 
@@ -28,8 +29,7 @@ const app = initializeApp(firebaseConfig);
 
 /**
  * INITIALIZATION WITH LONG POLLING
- * Fix: Enabled long polling to bypass network restrictions that cause 
- * "Could not reach Cloud Firestore backend" errors.
+ * Fix: Configurado para forçar long polling e desativar streams nativos para bypassar bloqueios de rede comuns.
  */
 const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
@@ -180,6 +180,7 @@ export const uploadToCloudinary = async (file: File, type: 'logo' | 'banner' | '
 // --- CATEGORIAS ---
 export const getCategories = async (onlyActive = false): Promise<Category[]> => {
   try {
+    // Garantindo leitura exata da coleção site_categorias
     const q = query(collection(db, "site_categorias"));
     const snap = await getDocs(q);
     const allCategories = snap.docs.map(d => ({ id: d.id, ...d.data() } as Category));
@@ -191,9 +192,10 @@ export const getCategories = async (onlyActive = false): Promise<Category[]> => 
       return dateB - dateA;
     });
 
-    return onlyActive ? sorted.filter(cat => cat.ativo === true) : sorted;
+    // Filtro resiliente: se onlyActive for true, garante que NÃO é inativo
+    return onlyActive ? sorted.filter(cat => cat.ativo !== false) : sorted;
   } catch (err) {
-    console.error("Erro ao buscar categorias:", err);
+    console.error("Erro ao buscar categorias no Firestore:", err);
     return [];
   }
 };
@@ -218,6 +220,7 @@ export const deleteCategory = async (id: string) => {
 // --- SUBCATEGORIAS ---
 export const getSubcategories = async (onlyActive = false): Promise<Subcategory[]> => {
   try {
+    // Garantindo leitura exata da coleção site_subcategorias
     const q = query(collection(db, "site_subcategorias"));
     const snap = await getDocs(q);
     const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Subcategory));
@@ -225,9 +228,10 @@ export const getSubcategories = async (onlyActive = false): Promise<Subcategory[
     // Sort in memory by name
     const sorted = all.sort((a, b) => a.nome.localeCompare(b.nome));
     
-    return onlyActive ? sorted.filter(s => s.ativo) : sorted;
+    // Filtro resiliente: garante que NÃO é inativo
+    return onlyActive ? sorted.filter(s => s.ativo !== false) : sorted;
   } catch (err) {
-    console.error("Erro ao buscar subcategorias:", err);
+    console.error("Erro ao buscar subcategorias no Firestore:", err);
     return [];
   }
 };

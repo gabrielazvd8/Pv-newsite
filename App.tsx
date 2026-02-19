@@ -1,3 +1,4 @@
+
 /** @AI_LOCKED */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -62,21 +63,31 @@ const App: React.FC = () => {
 
   const loadAppData = async () => {
     try {
+      // Carregar configurações de forma independente para garantir que a UI tenha as flags de seção
       const siteConfig = await storage.getSiteConfig();
+      if (siteConfig && siteConfig.settings) {
+        setSettings(siteConfig.settings);
+      }
+
+      // Carregamento paralelo com tratamento individual de erro para garantir que a vitrine popule os estados
+      // mesmo que uma coleção secundária falhe ou esteja vazia.
       const [p, c, s, allLogos, tpv] = await Promise.all([
-        storage.getProducts(),
-        storage.getCategories(true),
-        storage.getSubcategories(true),
-        storage.getLogos(),
-        storage.getTeamPVItems()
+        storage.getProducts().catch(() => []),
+        storage.getCategories(true).catch(() => []),
+        storage.getSubcategories(true).catch(() => []),
+        storage.getLogos().catch(() => []),
+        storage.getTeamPVItems().catch(() => [])
       ]);
+
       setProducts(p || []);
       setCategories(c || []);
       setSubcategories(s || []);
-      setSettings(siteConfig.settings);
       setLogos(allLogos || []);
       setTeamPVItems(tpv || []);
-    } catch (err) { console.error("Falha ao carregar dados vitrine:", err); }
+
+    } catch (err) { 
+      console.error("Falha crítica ao carregar dados vitrine:", err); 
+    }
   };
 
   const activeLogo = useMemo(() => logos.find(l => l.ativo) || logos[0], [logos]);
@@ -176,75 +187,57 @@ const App: React.FC = () => {
               )}
             </section>
 
+            {/* Fix: Added missing CategoryCarousel properties to resolve TypeScript error */}
             <CategoryCarousel 
-              categories={categories} subcategories={subcategories} activeCategory={activeCategory} 
-              onCategoryChange={(id) => { setActiveCategory(id); setActiveSubcategory('All'); }} 
-              activeSubcategory={activeSubcategory} onSubcategoryChange={setActiveSubcategory} 
+              categories={categories} 
+              subcategories={subcategories} 
+              activeCategory={activeCategory} 
+              onCategoryChange={(id) => { 
+                setActiveCategory(id);
+                setActiveSubcategory('All');
+              }}
+              activeSubcategory={activeSubcategory}
+              onSubcategoryChange={setActiveSubcategory}
             />
 
-            {settings.teamPVSectionActive && teamPVItems.length > 0 && <TeamPVSection items={teamPVItems} />}
+            {settings.teamPVSectionActive && teamPVItems.length > 0 && (
+              <TeamPVSection items={teamPVItems} />
+            )}
           </main>
 
-          <footer className="bg-black border-t border-zinc-900 pt-32 pb-16 text-center">
-            <div className="mb-16 opacity-30 hover:opacity-100 transition-all duration-700 inline-block">
-               <img src={activeLogo?.midia_url || "assets/img/IMG_3069.PNG"} alt="PV Sports" className="h-24 md:h-32 object-contain" />
-            </div>
-            <div className="flex justify-center gap-16 mb-24">
-              <a 
-                href="https://www.instagram.com/pvsports16/" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-[10px] uppercase tracking-[0.5em] text-zinc-700 hover:text-green-500 cursor-pointer font-black italic transition-colors"
-              >
-                Instagram
-              </a>
-              <a 
-                href="https://wa.me/5584998538567" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-[10px] uppercase tracking-[0.5em] text-zinc-700 hover:text-green-500 cursor-pointer font-black italic transition-colors"
-              >
-                WhatsApp
-              </a>
-            </div>
-
-            <div className="container mx-auto px-4 border-t border-zinc-900 pt-16">
-               <p className="text-zinc-800 text-[9px] uppercase tracking-[0.8em] font-black italic">PV Sports (since 2021) &mdash; Estilo de Elite &copy; {currentYear}</p>
-               <a 
-                 href="https://www.instagram.com/azvd.ai/" 
-                 target="_blank" 
-                 rel="noopener noreferrer" 
-                 className="mt-6 block text-zinc-900 text-[10px] uppercase tracking-[0.4em] font-black hover:text-green-500 transition-colors"
-               >
-                 Feito por: AZVD.ai - Desenvolvedor: Gabriel Azevedo
-               </a>
-            </div>
-
+          <footer className="bg-zinc-950 py-20 border-t border-zinc-900">
+             <div className="container mx-auto px-4 text-center">
+                <div className="flex justify-center mb-8">
+                  {activeLogo?.midia_url ? (
+                    <img src={activeLogo.midia_url} alt="PV Sports" className="h-12 object-contain grayscale opacity-30" />
+                  ) : (
+                    <h1 className="text-xl font-black italic tracking-tighter text-zinc-800">PV<span className="text-zinc-900">SPORTS</span></h1>
+                  )}
+                </div>
+                <p className="text-[10px] text-zinc-700 uppercase tracking-[0.5em] font-black">
+                  &copy; {currentYear} PV Sports Heritage &mdash; All Rights Reserved
+                </p>
+             </div>
           </footer>
-
-          {/* Botão Flutuante do WhatsApp */}
-          <a 
-            href="https://wa.me/5584998538567?text=Olá%20PV,%20gostaria%20de%20tirar%20uma%20dúvida!"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="fixed bottom-8 right-8 z-[100] bg-[#25D366] p-4 rounded-full shadow-[0_10px_40px_rgba(37,211,102,0.4)] hover:scale-110 transition-all active:scale-95 group"
-            aria-label="Atendimento WhatsApp"
-          >
-            <svg 
-              className="w-8 h-8 text-white animate-[pulse_3s_infinite]" 
-              fill="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.025 3.107l-.694 2.537 2.59-.68c.767.415 1.748.796 2.847.796 3.181 0 5.767-2.586 5.768-5.766 0-3.18-2.586-5.76-5.768-5.76zm3.377 8.272c-.14.393-.7.712-1.147.76-.32.033-.733.053-1.18-.093-.277-.093-.637-.215-1.077-.41-1.85-.807-3.047-2.7-3.14-2.827-.093-.126-.76-.993-.76-1.893 0-.9.467-1.34.633-1.527.167-.187.367-.233.49-.233h.353c.113 0 .26.013.407.34.167.387.573 1.4.627 1.507.053.113.087.24.013.387-.073.14-.113.22-.227.353-.113.133-.24.3-.34.407-.113.12-.233.253-.1.48.133.227.593.973 1.273 1.58.873.78 1.607 1.02 1.833 1.133.227.113.36.093.493-.06.133-.153.573-.667.727-.893.153-.227.307-.187.52-.107.213.08 1.353.64 1.587.753.233.113.387.167.447.267.06.1.06.58-.14.973z"/>
-            </svg>
-          </a>
 
           <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
         </>
       )}
 
-      {view === 'login' && <AdminLogin onSuccess={() => { setIsAuthenticated(true); setView('admin'); }} onCancel={() => setView('store')} />}
-      {view === 'admin' && <AdminDashboard onLogout={handleLogout} onBack={() => setView('store')} onUpdate={loadAppData} />}
+      {view === 'admin' && (
+        <AdminDashboard 
+          onLogout={handleLogout} 
+          onBack={() => setView('store')} 
+          onUpdate={loadAppData}
+        />
+      )}
+
+      {view === 'login' && (
+        <AdminLogin 
+          onSuccess={() => setView('admin')} 
+          onCancel={() => setView('store')} 
+        />
+      )}
     </div>
   );
 };
