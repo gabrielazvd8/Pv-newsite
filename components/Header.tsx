@@ -23,7 +23,7 @@ const Header: React.FC<HeaderProps> = ({
           
           {/* Logo Central/Lateral */}
           <div 
-            className={`transition-all duration-1000 cursor-pointer z-20 flex items-center justify-center shrink-0 ${isScrolled ? 'w-24 md:w-32 transform-none' : 'w-56 md:w-80 transform -translate-y-2'}`} 
+            className={`transition-all duration-1000 cursor-pointer z-20 flex items-center justify-center shrink-0 ${isScrolled ? 'w-24 md:w-32 transform-none' : 'w-56 md:w-80 transform translate-y-0 md:-translate-y-2'}`} 
             onClick={onResetFilter}
           >
              {activeLogo?.midia_url ? (
@@ -44,7 +44,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Área Administrativa */}
-          <div className={`flex items-center shrink-0 transition-all duration-1000 ${isScrolled ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12 pointer-events-none'}`}>
+          <div className={`flex items-center shrink-0 transition-all duration-1000 ${isScrolled ? 'opacity-100 translate-x-0 relative' : 'opacity-0 translate-x-12 pointer-events-none absolute right-4 md:relative md:right-auto'}`}>
             <button 
               onClick={onAdminClick} 
               className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-[24px] text-zinc-400 hover:text-green-500 transition-all shadow-xl active:scale-90"
