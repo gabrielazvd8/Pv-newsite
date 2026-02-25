@@ -1,12 +1,31 @@
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Announcement } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AnnouncementBarProps {
   announcements: Announcement[];
 }
 
 const AnnouncementBar: React.FC<AnnouncementBarProps> = ({ announcements }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (announcements.length > 1) {
+      timerRef.current = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % announcements.length);
+      }, 2500);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+      setCurrentIndex(0);
+    }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [announcements.length]);
+
   if (!announcements || announcements.length === 0) return null;
 
   const getIcon = (iconName?: string) => {
@@ -21,39 +40,23 @@ const AnnouncementBar: React.FC<AnnouncementBarProps> = ({ announcements }) => {
     }
   };
 
+  const currentAnn = announcements[currentIndex] || announcements[0];
+
   return (
-    <div className="w-full bg-white text-black py-2.5 px-4 overflow-hidden relative z-[60] border-b border-zinc-200">
-      <div className="flex items-center justify-center gap-8 whitespace-nowrap animate-marquee">
-        {announcements.map((ann, idx) => (
-          <div key={ann.id || idx} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
-            {ann.icone && <span>{getIcon(ann.icone)}</span>}
-            <span>{ann.nome}</span>
-          </div>
-        ))}
-        {/* Duplicate for seamless loop if needed, but for now simple list is fine if centered */}
-        {announcements.length > 1 && announcements.map((ann, idx) => (
-          <div key={`dup-${ann.id || idx}`} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
-            {ann.icone && <span>{getIcon(ann.icone)}</span>}
-            <span>{ann.nome}</span>
-          </div>
-        ))}
-      </div>
-      <style>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee {
-          display: flex;
-          width: fit-content;
-          animation: marquee 30s linear infinite;
-        }
-        @media (max-width: 768px) {
-          .animate-marquee {
-            animation-duration: 20s;
-          }
-        }
-      `}</style>
+    <div className="w-full bg-white text-black py-2.5 px-4 overflow-hidden relative z-[60] border-b border-zinc-200 h-10 flex items-center justify-center">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentAnn.id || currentIndex}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+          className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest absolute"
+        >
+          {currentAnn.icone && <span>{getIcon(currentAnn.icone)}</span>}
+          <span>{currentAnn.nome}</span>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };

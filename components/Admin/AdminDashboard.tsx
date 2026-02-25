@@ -322,6 +322,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       else if (type === 'logo') await storage.deleteLogo(id);
       else if (type === 'banner') await storage.deleteCarouselImage(id);
       else if (type === 'teampv') await storage.deleteTeamPVItem(id);
+      else if (type === 'announcement') await storage.deleteAnnouncement(id);
       await loadData(); onUpdate();
     } catch (err) { alert(err); } finally { setIsUploading(false); }
   };
