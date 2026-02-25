@@ -1,6 +1,7 @@
 
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
+  getFirestore,
   initializeFirestore, doc, setDoc, getDoc, getDocs, 
   collection, addDoc, updateDoc, deleteDoc, 
   query, where, orderBy, serverTimestamp, 
@@ -25,15 +26,20 @@ const firebaseConfig = {
   projectId: "pv-sports-726c0"
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 /**
  * INITIALIZATION WITH LONG POLLING
  * Fix: Configurado para forçar long polling e desativar streams nativos para bypassar bloqueios de rede comuns.
  */
-const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-});
+let db;
+try {
+  db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+  });
+} catch (e) {
+  db = getFirestore(app);
+}
 
 const auth = getAuth(app);
 
