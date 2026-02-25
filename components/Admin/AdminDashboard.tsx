@@ -197,7 +197,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
         isPromo: fd.get('isPromo') === 'on',
         isLancamento: fd.get('isLancamento') === 'on',
         isProntaEntrega: fd.get('isProntaEntrega') === 'on',
-        ativo: true
+        ativo: fd.get('ativo') === 'on'
       });
       resetForm(); await loadData(); onUpdate();
     } catch (err) { alert(err); } finally { setIsUploading(false); }
@@ -389,6 +389,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                     </div>
                   )}
 
+                  {(tab === 'categories' || tab === 'subcategories') && (
+                    <div className="flex items-center gap-2 p-4 bg-black border border-zinc-800 rounded-xl">
+                      <label className="text-[9px] uppercase font-black flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          name="ativo" 
+                          defaultChecked={editingItem ? (editingItem.ativo !== false) : true} 
+                          className="accent-green-500" 
+                        /> 
+                        Status Ativo
+                      </label>
+                    </div>
+                  )}
+
                   {tab === 'products' && (
                     <>
                       <div className="space-y-1">
@@ -421,6 +435,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                            <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isPromo" defaultChecked={editingItem?.isPromo} className="accent-red-500" /> PROMO</label>
                            <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isLancamento" defaultChecked={editingItem?.isLancamento} className="accent-white" /> LANÇAMENTO</label>
                            <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isProntaEntrega" defaultChecked={editingItem?.isProntaEntrega} className="accent-green-500" /> PRONTA</label>
+                           <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="ativo" defaultChecked={editingItem ? (editingItem.ativo !== false) : true} className="accent-green-500" /> ATIVO</label>
                         </div>
                       </div>
                     </>
