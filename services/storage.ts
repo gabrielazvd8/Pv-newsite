@@ -126,17 +126,16 @@ const setLocal = (key: string, data: any) => localStorage.setItem(key, JSON.stri
 export const deleteFromCloudinary = async (public_id: string, resourceType: 'image' | 'video' = 'image'): Promise<boolean> => {
   if (!public_id) return true;
   try {
-    const destroyUrl = CLOUDINARY_CONFIG.API_ENDPOINT
-      .replace('/image/', `/${resourceType}/`)
-      .replace('/upload', '/destroy');
-    const formData = new FormData();
-    formData.append('public_id', public_id);
-    formData.append('api_key', CLOUDINARY_CONFIG.API_KEY);
-    await fetch(destroyUrl, { method: 'POST', body: formData });
-    return true; 
+    const response = await fetch('/api/cloudinary-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ public_id, resource_type: resourceType })
+    });
+    const data = await response.json();
+    return data.success === true;
   } catch (err) {
     console.warn("Cloudinary Destroy failed:", err);
-    return true;
+    return false; // Return false to indicate failure, but we usually continue
   }
 };
 
@@ -214,13 +213,46 @@ export const saveCategory = async (cat: Partial<Category>) => {
 };
 
 export const deleteCategory = async (id: string) => {
-  const docRef = doc(db, "site_categorias", id);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
-    const data = docSnap.data() as Category;
-    if (data.cloudinary_id) await deleteFromCloudinary(data.cloudinary_id);
+  try {
+    const categoryRef = doc(db, "site_categorias", id);
+    const categorySnap = await getDoc(categoryRef);
+    
+    if (!categorySnap.exists()) return;
+    const categoryData = categorySnap.data() as Category;
+
+    // 1. Buscar subcategorias vinculadas para deleção em cascata
+    const subQuery = query(collection(db, "site_subcategorias"), where("categoriaId", "==", id));
+    const subSnap = await getDocs(subQuery);
+    
+    const batch = writeBatch(db);
+    const cloudinaryDeletions: Promise<any>[] = [];
+
+    // Adicionar subcategorias ao batch e fila de deleção Cloudinary
+    subSnap.docs.forEach(subDoc => {
+      const subData = subDoc.data() as Subcategory;
+      if (subData.cloudinary_id) {
+        cloudinaryDeletions.push(deleteFromCloudinary(subData.cloudinary_id));
+      }
+      batch.delete(subDoc.ref);
+    });
+
+    // Adicionar categoria ao batch
+    batch.delete(categoryRef);
+    if (categoryData.cloudinary_id) {
+      cloudinaryDeletions.push(deleteFromCloudinary(categoryData.cloudinary_id));
+    }
+
+    // Executar deleção no Banco (Atômico)
+    await batch.commit();
+
+    // Executar deleções no Cloudinary (Melhor esforço)
+    await Promise.allSettled(cloudinaryDeletions);
+    
+    return true;
+  } catch (err) {
+    console.error("Erro crítico ao excluir categoria:", err);
+    throw err;
   }
-  await deleteDoc(docRef);
 };
 
 // --- SUBCATEGORIAS ---
@@ -259,13 +291,26 @@ export const saveSubcategory = async (sub: Partial<Subcategory>) => {
 };
 
 export const deleteSubcategory = async (id: string) => {
-  const docRef = doc(db, "site_subcategorias", id);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
+  try {
+    const docRef = doc(db, "site_subcategorias", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) return;
     const data = docSnap.data() as Subcategory;
-    if (data.cloudinary_id) await deleteFromCloudinary(data.cloudinary_id);
+
+    // Deleta do Banco primeiro
+    await deleteDoc(docRef);
+
+    // Deleta do Cloudinary
+    if (data.cloudinary_id) {
+      await deleteFromCloudinary(data.cloudinary_id);
+    }
+    
+    return true;
+  } catch (err) {
+    console.error("Erro ao excluir subcategoria:", err);
+    throw err;
   }
-  await deleteDoc(docRef);
 };
 
 // --- PRODUTOS ---
@@ -321,16 +366,31 @@ export const updateProductStatus = async (id: string, updates: Partial<Product>)
 };
 
 export const deleteProduct = async (id: string) => {
-  const docRef = doc(db, "site_produtos", id);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
+  try {
+    const docRef = doc(db, "site_produtos", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) return;
     const data = docSnap.data() as Product;
-    if (data.cloudinary_ids) {
-      for (const cid of data.cloudinary_ids) await deleteFromCloudinary(cid, 'image');
+
+    // Deleta do Banco
+    await deleteDoc(docRef);
+
+    // Deleta Mídias do Cloudinary
+    const deletions: Promise<any>[] = [];
+    if (data.cloudinary_ids && data.cloudinary_ids.length > 0) {
+      data.cloudinary_ids.forEach(cid => deletions.push(deleteFromCloudinary(cid, 'image')));
     }
-    if (data.video_cloudinary_id) await deleteFromCloudinary(data.video_cloudinary_id, 'video');
+    if (data.video_cloudinary_id) {
+      deletions.push(deleteFromCloudinary(data.video_cloudinary_id, 'video'));
+    }
+
+    await Promise.allSettled(deletions);
+    return true;
+  } catch (err) {
+    console.error("Erro ao excluir produto:", err);
+    throw err;
   }
-  await deleteDoc(docRef);
 };
 
 // --- BANNERS, LOGOS, TEAM PV ---
