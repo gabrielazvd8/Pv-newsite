@@ -2,7 +2,7 @@
 /** @AI_LOCKED */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Product, AppView, Category, Subcategory, AppSettings, Logo, TeamPVItem } from './types';
+import { Product, AppView, Category, Subcategory, AppSettings, Logo, TeamPVItem, Announcement } from './types';
 import * as storage from './services/storage';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -13,6 +13,7 @@ import CategoryCarousel from './components/CategoryCarousel';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminLogin from './components/Admin/AdminLogin';
 import TeamPVSection from './components/TeamPVSection';
+import AnnouncementBar from './components/AnnouncementBar';
 import { auth, onAuthStateChanged } from "./services/storage";
 
 const App: React.FC = () => {
@@ -25,10 +26,12 @@ const App: React.FC = () => {
     prontaEntregaSectionActive: true, 
     lancamentoSectionActive: true,
     teamPVSectionActive: false,
-    activeLogoId: 'default'
+    activeLogoId: 'default',
+    announcementBarActive: false
   });
   const [logos, setLogos] = useState<Logo[]>([]);
   const [teamPVItems, setTeamPVItems] = useState<TeamPVItem[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -71,12 +74,13 @@ const App: React.FC = () => {
 
       // Carregamento paralelo com tratamento individual de erro para garantir que a vitrine popule os estados
       // mesmo que uma coleção secundária falhe ou esteja vazia.
-      const [p, c, s, allLogos, tpv] = await Promise.all([
+      const [p, c, s, allLogos, tpv, ann] = await Promise.all([
         storage.getProducts().catch(() => []),
         storage.getCategories(true).catch(() => []),
         storage.getSubcategories(true).catch(() => []),
         storage.getLogos().catch(() => []),
-        storage.getTeamPVItems().catch(() => [])
+        storage.getTeamPVItems().catch(() => []),
+        storage.getAnnouncements(true).catch(() => [])
       ]);
 
       setProducts(p || []);
@@ -84,6 +88,7 @@ const App: React.FC = () => {
       setSubcategories(s || []);
       setLogos(allLogos || []);
       setTeamPVItems(tpv || []);
+      setAnnouncements(ann || []);
 
     } catch (err) { 
       console.error("Falha crítica ao carregar dados vitrine:", err); 
@@ -125,6 +130,9 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-black text-white selection:bg-green-500/30 flex flex-col overflow-x-hidden">
       {view === 'store' && (
         <>
+          {settings.announcementBarActive && announcements.length > 0 && (
+            <AnnouncementBar announcements={announcements} />
+          )}
           <Header isScrolled={isScrolled} searchQuery={searchQuery} onSearchChange={setSearchQuery} onAdminClick={() => setView(isAuthenticated ? 'admin' : 'login')} activeLogo={activeLogo} onResetFilter={handleResetFilters} />
           
           <main className="flex-grow">

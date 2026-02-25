@@ -74,6 +74,15 @@ export interface AppSettings {
   lancamentoSectionActive: boolean;
   teamPVSectionActive: boolean;
   activeLogoId: string;
+  announcementBarActive: boolean;
+}
+
+export interface Announcement {
+  id: string;
+  nome: string;
+  icone?: string;
+  ativo: boolean;
+  createdAt: any;
 }
 
 export type AppView = 'store' | 'admin' | 'login';

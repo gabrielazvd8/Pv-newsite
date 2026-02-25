@@ -15,7 +15,7 @@ import {
   signOut
 } from "firebase/auth";
 import type { User } from "firebase/auth";
-import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem } from '../types';
+import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem, Announcement } from '../types';
 
 /**
  * CONFIGURAÇÃO FIREBASE
@@ -147,7 +147,8 @@ export const getSiteConfig = async (): Promise<any> => {
       prontaEntregaSectionActive: true,
       lancamentoSectionActive: true,
       teamPVSectionActive: false,
-      activeLogoId: 'default'
+      activeLogoId: 'default',
+      announcementBarActive: false
     }
   };
   try {
@@ -393,7 +394,45 @@ export const deleteProduct = async (id: string) => {
   }
 };
 
-// --- BANNERS, LOGOS, TEAM PV ---
+// --- BARRA DE ANÚNCIO ---
+export const getAnnouncements = async (onlyActive = false): Promise<Announcement[]> => {
+  try {
+    const q = query(collection(db, "site_barraanuncio"));
+    const snap = await getDocs(q);
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Announcement));
+    const sorted = all.sort((a, b) => {
+      const dateA = a.createdAt?.seconds || 0;
+      const dateB = b.createdAt?.seconds || 0;
+      return dateB - dateA;
+    });
+    return onlyActive ? sorted.filter(a => a.ativo !== false) : sorted;
+  } catch (err) {
+    console.error("Erro ao buscar anúncios:", err);
+    return [];
+  }
+};
+
+export const saveAnnouncement = async (ann: Partial<Announcement>) => {
+  if (!ann.nome) throw new Error("O texto do anúncio é obrigatório");
+  const data = { 
+    nome: ann.nome, 
+    icone: ann.icone || null, 
+    ativo: ann.ativo ?? true,
+    createdAt: ann.createdAt || serverTimestamp()
+  };
+  if (ann.id) await updateDoc(doc(db, "site_barraanuncio", ann.id), data);
+  else await addDoc(collection(db, "site_barraanuncio"), data);
+};
+
+export const deleteAnnouncement = async (id: string) => {
+  await deleteDoc(doc(db, "site_barraanuncio", id));
+};
+
+export const updateSiteSettings = async (settings: Partial<AppSettings>) => {
+  const docRef = doc(db, "site_config", "general_settings");
+  await updateDoc(docRef, settings);
+};
+
 export const getCarouselImages = async (): Promise<CarouselImage[]> => {
   try {
     const q = query(collection(db, "site_banners"));

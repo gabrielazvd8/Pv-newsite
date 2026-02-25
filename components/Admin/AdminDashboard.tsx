@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import * as storage from '../../services/storage';
-import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem } from '../../types';
+import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem, Announcement } from '../../types';
 // Fix: Import onAuthStateChanged and auth exclusively from storage service to resolve environment-specific export issues
 import { auth, onAuthStateChanged } from "../../services/storage";
 
@@ -17,7 +17,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const [isVerifying, setIsVerifying] = useState(true);
   const [tab, setTab] = useState<'products' | 'categories' | 'subcategories' | 'settings'>('products');
   // Fix: Renamed 'carrossel' to 'carousel' in the state type to match comparisons and ID usage
-  const [subTab, setSubTab] = useState<'sections' | 'carousel' | 'logo' | 'teampv'>('sections');
+  const [subTab, setSubTab] = useState<'sections' | 'carousel' | 'logo' | 'teampv' | 'announcement'>('sections');
   
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -25,12 +25,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const [carouselImages, setCarouselImages] = useState<CarouselImage[]>([]);
   const [logos, setLogos] = useState<Logo[]>([]);
   const [teamPVItems, setTeamPVItems] = useState<TeamPVItem[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [settings, setSettings] = useState<AppSettings>({ 
     promoSectionActive: false,
     prontaEntregaSectionActive: true, 
     lancamentoSectionActive: true,
     teamPVSectionActive: false,
-    activeLogoId: 'default'
+    activeLogoId: 'default',
+    announcementBarActive: false
   });
   
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -65,14 +67,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
   const loadData = async () => {
     try {
-      const [p, c, s, ci, l, sett, tpv] = await Promise.all([
+      const [p, c, s, ci, l, sett, tpv, ann] = await Promise.all([
         storage.getProducts(),
         storage.getCategories(),
         storage.getSubcategories(),
         storage.getCarouselImages(),
         storage.getLogos(),
         storage.getSettings(),
-        storage.getTeamPVItems()
+        storage.getTeamPVItems(),
+        storage.getAnnouncements()
       ]);
       setProducts(p);
       setCategories(c);
@@ -81,6 +84,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       setLogos(l);
       setSettings(sett);
       setTeamPVItems(tpv);
+      setAnnouncements(ann);
     } catch (err) { console.error("Erro ao carregar dados ADM:", err); }
   };
 
@@ -263,6 +267,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       });
       resetForm(); await loadData(); onUpdate();
     } catch (err) { alert(err); } finally { setIsUploading(false); }
+  };
+
+  const handleSaveAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const fd = new FormData(e.target as HTMLFormElement);
+    const nome = fd.get('nome') as string;
+    if (!nome) return alert("O texto do anúncio é obrigatório.");
+    
+    setIsUploading(true);
+    try {
+      await storage.saveAnnouncement({
+        id: editingItem?.id,
+        nome,
+        icone: fd.get('icone') as string,
+        ativo: true
+      });
+      resetForm(); await loadData(); onUpdate();
+    } catch (err) { alert(err); } finally { setIsUploading(false); }
+  };
+
+  const handleToggleAnnouncement = async (id: string, currentStatus: boolean) => {
+    try {
+      await storage.saveAnnouncement({ id, ativo: !currentStatus });
+      await loadData();
+      onUpdate();
+    } catch (err) { alert(err); }
   };
 
   const handleSaveTeamPV = async (e: React.FormEvent) => {
@@ -527,6 +557,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
               {[
                 {id: 'sections', label: 'Ativação'},
+                {id: 'announcement', label: 'Barra de Anúncio'},
                 {id: 'logo', label: 'Logos'},
                 {id: 'carousel', label: 'Carrossel'},
                 {id: 'teampv', label: 'Team PV'}
@@ -667,13 +698,78 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
               <div className="bg-zinc-950 p-5 sm:p-8 border border-zinc-900 rounded-[24px] sm:rounded-[30px] max-w-md shadow-2xl mx-auto lg:mx-0">
                  <h3 className="text-xl font-black mb-6 italic uppercase tracking-tighter">Vitrine Ativa</h3>
                  <div className="space-y-4">
-                    {['promoSectionActive', 'lancamentoSectionActive', 'prontaEntregaSectionActive', 'teamPVSectionActive'].map(id => (
+                    {['announcementBarActive', 'promoSectionActive', 'lancamentoSectionActive', 'prontaEntregaSectionActive', 'teamPVSectionActive'].map(id => (
                        <label key={id} className="flex justify-between items-center p-4 bg-black border border-zinc-900 rounded-2xl cursor-pointer hover:border-green-500 transition-all">
-                          <span className="text-[10px] font-black uppercase tracking-widest">{id.replace('SectionActive', '')}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">{id.replace('SectionActive', '').replace('announcementBarActive', 'Barra de Anúncio')}</span>
                           <input type="checkbox" checked={(settings as any)[id]} onChange={(e) => storage.saveSettings({ ...settings, [id]: e.target.checked }).then(loadData)} className="w-5 h-5 accent-green-500" />
                        </label>
                     ))}
                  </div>
+              </div>
+            )}
+
+            {subTab === 'announcement' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <div className="lg:col-span-5">
+                  <div className="bg-zinc-950 p-5 sm:p-8 border border-zinc-900 rounded-[24px] sm:rounded-[30px] shadow-2xl lg:sticky lg:top-8">
+                    <h3 className="text-xl font-black mb-8 italic uppercase tracking-tighter">Novo Anúncio</h3>
+                    <form onSubmit={handleSaveAnnouncement} className="space-y-6">
+                      <div className="space-y-1">
+                        <label className="text-[9px] uppercase font-black text-zinc-600 ml-2">Texto do Anúncio</label>
+                        <input type="text" name="nome" defaultValue={editingItem?.nome} placeholder="Ex: Frete Grátis acima de R$ 200" className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-xl focus:border-green-500 outline-none" required />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] uppercase font-black text-zinc-600 ml-2">Ícone (Opcional)</label>
+                        <select name="icone" defaultValue={editingItem?.icone || ''} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-xl focus:border-green-500 outline-none">
+                          <option value="">Sem Ícone</option>
+                          <option value="caminhão">🚚 Frete</option>
+                          <option value="cupom">🎫 Cupom</option>
+                          <option value="fogo">🔥 Fogo</option>
+                          <option value="relógio">🕒 Relógio</option>
+                          <option value="estrela">⭐ Estrela</option>
+                          <option value="caixa">📦 Caixa</option>
+                        </select>
+                      </div>
+                      <button type="submit" className="w-full bg-green-500 text-black py-4 text-[10px] font-black uppercase rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all">
+                        {isUploading ? 'Salvando...' : 'Salvar Anúncio'}
+                      </button>
+                      {editingItem && <button type="button" onClick={resetForm} className="w-full text-zinc-500 text-[8px] uppercase font-black">Cancelar Edição</button>}
+                    </form>
+                  </div>
+                </div>
+                <div className="lg:col-span-7 space-y-4">
+                  {announcements.map(ann => (
+                    <div key={ann.id} className={`p-4 sm:p-6 border rounded-2xl sm:rounded-3xl flex justify-between items-center transition-all gap-4 ${ann.ativo ? 'bg-zinc-900 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'bg-zinc-950 border-zinc-900 hover:border-zinc-700'}`}>
+                       <div className="flex items-center gap-4 w-full">
+                         <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center border border-zinc-800 text-lg">
+                           {ann.icone ? (
+                             ann.icone === 'caminhão' ? '🚚' : 
+                             ann.icone === 'cupom' ? '🎫' : 
+                             ann.icone === 'fogo' ? '🔥' : 
+                             ann.icone === 'relógio' ? '🕒' : 
+                             ann.icone === 'estrela' ? '⭐' : 
+                             ann.icone === 'caixa' ? '📦' : ''
+                           ) : '📝'}
+                         </div>
+                         <div className="flex-grow min-w-0">
+                           <span className="text-[10px] uppercase font-black text-zinc-200 block truncate">{ann.nome}</span>
+                         </div>
+                       </div>
+                       <div className="flex gap-2">
+                         <button onClick={() => handleToggleAnnouncement(ann.id, ann.ativo)} className={`px-4 py-2 rounded-xl text-[8px] uppercase font-black transition-all ${ann.ativo ? 'bg-green-500 text-black' : 'bg-zinc-800 text-zinc-500 hover:text-white'}`}>
+                           {ann.ativo ? 'Ativo' : 'Ativar'}
+                         </button>
+                         <button onClick={() => startEdit(ann)} className="p-3 bg-zinc-800 rounded-xl text-zinc-400 hover:text-white">✏️</button>
+                         <button onClick={() => handleDelete(ann.id, 'announcement')} className="p-3 bg-zinc-800 rounded-xl text-red-500/50 hover:text-red-500 transition-all">🗑️</button>
+                       </div>
+                    </div>
+                  ))}
+                  {announcements.length === 0 && (
+                    <div className="text-center py-20 border-2 border-dashed border-zinc-900 rounded-[40px]">
+                      <p className="text-zinc-700 text-[10px] font-black uppercase tracking-widest">Nenhum anúncio cadastrado</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
