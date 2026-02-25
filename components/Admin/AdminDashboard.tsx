@@ -329,7 +329,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-black text-white">
+    <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto min-h-screen bg-black text-white">
       {isUploading && (
         <div className="fixed inset-0 bg-black/95 z-[300] flex flex-col items-center justify-center">
           <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -337,15 +337,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
-        <h1 className="text-4xl font-black italic uppercase italic tracking-tighter">PV ADMIN <span className="text-green-500">PRO</span></h1>
-        <div className="flex gap-4">
-          <button onClick={onBack} className="px-6 py-3 bg-zinc-900 text-[10px] uppercase font-black rounded-xl border border-zinc-800 hover:border-zinc-600 transition-all">Vitrine</button>
-          <button onClick={onLogout} className="px-6 py-3 bg-red-950/20 text-red-500 text-[10px] uppercase font-black rounded-xl border border-red-950/40 hover:bg-red-950/60 transition-all">Sair</button>
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8 md:mb-12">
+        <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">PV ADMIN <span className="text-green-500">PRO</span></h1>
+        <div className="flex gap-3 w-full md:w-auto">
+          <button onClick={onBack} className="flex-1 md:flex-none px-6 py-3 bg-zinc-900 text-[10px] uppercase font-black rounded-xl border border-zinc-800 hover:border-zinc-600 transition-all">Vitrine</button>
+          <button onClick={onLogout} className="flex-1 md:flex-none px-6 py-3 bg-red-950/20 text-red-500 text-[10px] uppercase font-black rounded-xl border border-red-950/40 hover:bg-red-950/60 transition-all">Sair</button>
         </div>
       </div>
 
-      <nav className="flex gap-2 mb-12 border-b border-zinc-900 pb-4 overflow-x-auto no-scrollbar">
+      <nav className="flex gap-2 mb-8 md:mb-12 border-b border-zinc-900 pb-4 overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
         {[
           {id: 'products', label: 'Produtos'},
           {id: 'categories', label: 'Categorias'},
@@ -355,7 +355,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
           <button 
             key={t.id}
             onClick={() => { setTab(t.id as any); resetForm(); }}
-            className={`px-8 py-4 text-[10px] uppercase font-black tracking-widest transition-all rounded-xl border ${tab === t.id ? 'bg-zinc-900 text-green-500 border-zinc-800' : 'text-zinc-600 border-transparent hover:text-zinc-400'}`}
+            className={`px-5 md:px-8 py-3 md:py-4 text-[9px] md:text-[10px] uppercase font-black tracking-widest transition-all rounded-xl border whitespace-nowrap ${tab === t.id ? 'bg-zinc-900 text-green-500 border-zinc-800' : 'text-zinc-600 border-transparent hover:text-zinc-400'}`}
           >
             {t.label}
           </button>
@@ -366,7 +366,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
         {tab !== 'settings' ? (
           <>
             <div className="lg:col-span-5">
-              <div className="bg-zinc-950 p-8 border border-zinc-900 rounded-[30px] sticky top-8 shadow-2xl">
+              <div className="bg-zinc-950 p-5 sm:p-8 border border-zinc-900 rounded-[24px] sm:rounded-[30px] lg:sticky lg:top-8 shadow-2xl">
                 <h2 className="text-xl font-black mb-8 italic uppercase">{editingItem ? 'Editar' : 'Criar'} {tab}</h2>
                 <form onSubmit={tab === 'products' ? handleSaveProduct : tab === 'subcategories' ? handleSaveSubcategory : (e: any) => {
                   e.preventDefault();
@@ -405,18 +405,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                         </div>
                         <textarea name="description" defaultValue={editingItem?.description} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-xl h-24 focus:border-green-500 outline-none" />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <select name="categoryId" defaultValue={editingItem?.categoryId} className="bg-black border border-zinc-800 p-4 text-sm rounded-xl" required>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <select name="categoryId" defaultValue={editingItem?.categoryId} className="bg-black border border-zinc-800 p-4 text-sm rounded-xl outline-none focus:border-green-500" required>
                           <option value="">Categoria...</option>
                           {categories.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                         </select>
-                        <select name="subcategoryId" defaultValue={editingItem?.subcategoryId} className="bg-black border border-zinc-800 p-4 text-sm rounded-xl" required>
+                        <select name="subcategoryId" defaultValue={editingItem?.subcategoryId} className="bg-black border border-zinc-800 p-4 text-sm rounded-xl outline-none focus:border-green-500" required>
                           <option value="">Subcategoria...</option>
                           {subcategories.map(s => <option key={s.id} value={s.id}>{s.nome} ({s.categoriaNome})</option>)}
                         </select>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <input type="text" name="price" placeholder="Preço (R$)" defaultValue={editingItem?.price} className="bg-black border border-zinc-800 p-4 rounded-xl text-sm" />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <input type="text" name="price" placeholder="Preço (R$)" defaultValue={editingItem?.price} className="bg-black border border-zinc-800 p-4 rounded-xl text-sm outline-none focus:border-green-500" />
                         <div className="flex flex-col gap-2 p-4 bg-black border border-zinc-800 rounded-xl">
                            <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isPromo" defaultChecked={editingItem?.isPromo} className="accent-red-500" /> PROMO</label>
                            <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isLancamento" defaultChecked={editingItem?.isLancamento} className="accent-white" /> LANÇAMENTO</label>
@@ -431,7 +431,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                       <span className="text-[9px] uppercase font-black text-zinc-600">Mídia {tab === 'products' ? '(1 a 4)' : '(1)'}</span>
                       <input type="file" ref={multiFileInputRef} onChange={(e) => handleFileUpload(e, tab === 'products' ? 'image' : tab === 'categories' ? 'category' : 'subcategory' as any)} className="hidden" multiple={tab === 'products'} />
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                       {currentGallery.map((img, i) => (
                         <div key={i} className={`relative aspect-square overflow-hidden border border-zinc-800 ${tab === 'subcategories' ? 'rounded-full' : 'rounded-lg'}`}>
                            <img src={img.url} className="w-full h-full object-cover" />
@@ -465,18 +465,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             
             <div className="lg:col-span-7 space-y-4">
               {(tab === 'products' ? activeProducts : tab === 'categories' ? categories : subcategories).map((item: any) => (
-                <div key={item.id} className="bg-zinc-950 p-6 border border-zinc-900 rounded-3xl flex flex-col md:flex-row items-center justify-between hover:border-zinc-700 transition-all gap-4">
+                <div key={item.id} className="bg-zinc-950 p-4 sm:p-6 border border-zinc-900 rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row items-center justify-between hover:border-zinc-700 transition-all gap-4">
                   <div className="flex items-center gap-4 w-full">
-                    <div className={`w-12 h-12 overflow-hidden border border-zinc-800 bg-black flex-shrink-0 ${tab === 'subcategories' ? 'rounded-full' : 'rounded-lg'}`}>
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 overflow-hidden border border-zinc-800 bg-black flex-shrink-0 ${tab === 'subcategories' ? 'rounded-full' : 'rounded-lg'}`}>
                        <img src={item.midia || item.images?.[0]} className="w-full h-full object-cover" />
                     </div>
-                    <div className="flex-grow">
-                      <h4 className="text-[11px] font-black uppercase italic tracking-tighter">{item.nome || item.name}</h4>
-                      {item.categoriaNome && <p className="text-[8px] uppercase font-black text-zinc-600">{item.categoriaNome}</p>}
+                    <div className="flex-grow min-w-0">
+                      <h4 className="text-[10px] sm:text-[11px] font-black uppercase italic tracking-tighter truncate">{item.nome || item.name}</h4>
+                      {item.categoriaNome && <p className="text-[8px] uppercase font-black text-zinc-600 truncate">{item.categoriaNome}</p>}
                       
                       {/* Botões de Status Rápido na Lista */}
                       {tab === 'products' && (
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex flex-wrap gap-1.5 mt-2">
                           <button 
                             onClick={() => handleToggleStatus(item.id, 'isPromo', item.isPromo)}
                             className={`px-2 py-1 rounded-full text-[7px] font-black uppercase tracking-tighter border transition-all ${item.isPromo ? 'bg-red-500 text-white border-red-500' : 'bg-transparent text-zinc-700 border-zinc-800 hover:border-red-500/50'}`}
@@ -499,9 +499,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2 w-full md:w-auto justify-end">
-                    <button onClick={() => startEdit(item)} className="p-3 bg-zinc-900 rounded-xl text-zinc-400 hover:text-white">✏️</button>
-                    <button onClick={() => handleDelete(item.id, tab.slice(0, -1) as any)} className="p-3 bg-zinc-900 rounded-xl text-zinc-400 hover:text-red-500">🗑️</button>
+                  <div className="flex gap-2 w-full sm:w-auto justify-end border-t border-zinc-900 sm:border-0 pt-3 sm:pt-0">
+                    <button onClick={() => startEdit(item)} className="flex-1 sm:flex-none p-3 bg-zinc-900 rounded-xl text-zinc-400 hover:text-white flex justify-center">✏️</button>
+                    <button onClick={() => handleDelete(item.id, tab.slice(0, -1) as any)} className="flex-1 sm:flex-none p-3 bg-zinc-900 rounded-xl text-zinc-400 hover:text-red-500 flex justify-center">🗑️</button>
                   </div>
                 </div>
               ))}
@@ -529,7 +529,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             {subTab === 'logo' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <div className="lg:col-span-5">
-                  <div className="bg-zinc-950 p-8 border border-zinc-900 rounded-[30px] shadow-2xl">
+                  <div className="bg-zinc-950 p-5 sm:p-8 border border-zinc-900 rounded-[24px] sm:rounded-[30px] shadow-2xl">
                     <h3 className="text-xl font-black mb-8 italic uppercase tracking-tighter">Gestão de Logo</h3>
                     <form onSubmit={handleSaveLogo} className="space-y-6">
                       <div className="space-y-1">
@@ -559,15 +559,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                 </div>
                 <div className="lg:col-span-7 space-y-4">
                   {logos.map(l => (
-                    <div key={l.id} className={`p-6 border rounded-3xl flex justify-between items-center transition-all ${l.ativo ? 'bg-zinc-900 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'bg-zinc-950 border-zinc-900 hover:border-zinc-700'}`}>
-                       <div className="flex items-center gap-6">
-                         <div className="h-12 w-24 bg-black rounded-xl p-2 flex items-center justify-center border border-zinc-800 overflow-hidden">
+                    <div key={l.id} className={`p-4 sm:p-6 border rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row justify-between items-center transition-all gap-4 ${l.ativo ? 'bg-zinc-900 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'bg-zinc-950 border-zinc-900 hover:border-zinc-700'}`}>
+                       <div className="flex items-center gap-4 sm:gap-6 w-full">
+                         <div className="h-10 w-20 sm:h-12 sm:w-24 bg-black rounded-xl p-2 flex items-center justify-center border border-zinc-800 overflow-hidden flex-shrink-0">
                            <img src={l.midia_url} className="h-full object-contain" />
                          </div>
-                         <span className="text-[10px] uppercase font-black text-zinc-500">{l.nome}</span>
+                         <span className="text-[9px] sm:text-[10px] uppercase font-black text-zinc-500 truncate">{l.nome}</span>
                        </div>
-                       <div className="flex gap-2">
-                         <button onClick={() => storage.setActiveLogo(l.id).then(loadData)} className={`px-4 py-2 rounded-xl text-[8px] uppercase font-black transition-all ${l.ativo ? 'bg-green-500 text-black' : 'bg-zinc-800 text-zinc-500 hover:text-white'}`}>
+                       <div className="flex gap-2 w-full sm:w-auto justify-end border-t border-zinc-900 sm:border-0 pt-3 sm:pt-0">
+                         <button onClick={() => storage.setActiveLogo(l.id).then(loadData)} className={`flex-grow sm:flex-grow-0 px-4 py-2 rounded-xl text-[8px] uppercase font-black transition-all ${l.ativo ? 'bg-green-500 text-black' : 'bg-zinc-800 text-zinc-500 hover:text-white'}`}>
                            {l.ativo ? 'Ativa' : 'Ativar'}
                          </button>
                          <button onClick={() => startEdit(l)} className="p-3 bg-zinc-800 rounded-xl text-zinc-400 hover:text-white">✏️</button>
@@ -582,7 +582,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             {subTab === 'carousel' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <div className="lg:col-span-5">
-                  <div className="bg-zinc-950 p-8 border border-zinc-900 rounded-[30px] shadow-2xl sticky top-8">
+                  <div className="bg-zinc-950 p-5 sm:p-8 border border-zinc-900 rounded-[24px] sm:rounded-[30px] shadow-2xl lg:sticky lg:top-8">
                     <h3 className="text-xl font-black mb-8 italic uppercase tracking-tighter">Novo Banner</h3>
                     <form onSubmit={handleSaveCarousel} className="space-y-6">
                       <div className="space-y-1">
@@ -622,7 +622,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                     </form>
                   </div>
                 </div>
-                <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   {carouselImages.map(img => (
                     <div key={img.id} className="bg-zinc-950 border border-zinc-900 rounded-[30px] overflow-hidden group relative aspect-video shadow-2xl">
                       <img src={img.url} className="w-full h-full object-cover transition-all group-hover:scale-105" />
@@ -649,7 +649,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             )}
 
             {subTab === 'sections' && (
-              <div className="bg-zinc-950 p-8 border border-zinc-900 rounded-[30px] max-w-md shadow-2xl">
+              <div className="bg-zinc-950 p-5 sm:p-8 border border-zinc-900 rounded-[24px] sm:rounded-[30px] max-w-md shadow-2xl mx-auto lg:mx-0">
                  <h3 className="text-xl font-black mb-6 italic uppercase tracking-tighter">Vitrine Ativa</h3>
                  <div className="space-y-4">
                     {['promoSectionActive', 'lancamentoSectionActive', 'prontaEntregaSectionActive', 'teamPVSectionActive'].map(id => (
@@ -665,7 +665,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             {subTab === 'teampv' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <div className="lg:col-span-5">
-                  <div className="bg-zinc-950 p-8 border border-zinc-900 rounded-[30px] shadow-2xl sticky top-8">
+                  <div className="bg-zinc-950 p-5 sm:p-8 border border-zinc-900 rounded-[24px] sm:rounded-[30px] shadow-2xl lg:sticky lg:top-8">
                     <h3 className="text-xl font-black mb-8 italic uppercase tracking-tighter">Novo Integrante Elite</h3>
                     <form onSubmit={handleSaveTeamPV} className="space-y-6">
                       <div className="space-y-1">
@@ -693,7 +693,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                     </form>
                   </div>
                 </div>
-                <div className="lg:col-span-7 grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
                   {teamPVItems.map(item => (
                     <div key={item.id} className="relative aspect-[3/4] rounded-[40px] overflow-hidden border border-zinc-900 group shadow-xl bg-zinc-950">
                       <img src={item.image} className="w-full h-full object-cover transition-all group-hover:scale-105" />
