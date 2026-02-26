@@ -214,7 +214,7 @@ const App: React.FC = () => {
               <TeamPVSection items={teamPVItems} />
             )}
           </main>
-
+      
           <footer className="bg-zinc-900 pt-20 pb-10 border-t border-zinc-800">
              <div className="container mx-auto px-4 text-center">
                 {/* 1. Logo */}
