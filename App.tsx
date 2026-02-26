@@ -134,7 +134,7 @@ const App: React.FC = () => {
           {settings.announcementBarActive && announcements.length > 0 && (
             <AnnouncementBar announcements={announcements} />
           )}
-          <Header isScrolled={isScrolled} searchQuery={searchQuery} onSearchChange={setSearchQuery} onAdminClick={() => setView(isAuthenticated ? 'admin' : 'login')} activeLogo={activeLogo} onResetFilter={handleResetFilters} />
+          <Header isScrolled={isScrolled} searchQuery={searchQuery} onSearchChange={setSearchQuery} activeLogo={activeLogo} onResetFilter={handleResetFilters} />
           
           <main className="flex-grow">
             <Hero />
@@ -257,13 +257,21 @@ const App: React.FC = () => {
                 <div className="w-full h-[1px] bg-white/[0.08] mb-8"></div>
 
                 {/* 5. Credits */}
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <p className="text-[9px] text-zinc-600 uppercase tracking-widest font-bold">
                     Site feito por <a href="https://instagram.com/azvd.ai" target="_blank" rel="noopener noreferrer" className="underline text-zinc-400 hover:text-white transition-colors">AZVD.AI</a>
                   </p>
                   <p className="text-[9px] text-zinc-700 uppercase tracking-widest font-bold">
                     Desenvolvedor: <span className="underline">Gabriel Azevedo</span>
                   </p>
+
+                  {/* Admin Access - Discrete */}
+                  <button 
+                    onClick={() => setView(isAuthenticated ? 'admin' : 'login')}
+                    className="mt-4 text-[8px] text-zinc-800 uppercase tracking-[0.3em] hover:text-zinc-500 transition-colors"
+                  >
+                    Acesso Restrito
+                  </button>
                 </div>
              </div>
           </footer>
