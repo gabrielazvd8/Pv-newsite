@@ -266,12 +266,14 @@ const App: React.FC = () => {
                   </p>
 
                   {/* Admin Access - Discrete */}
-                  <button 
-                    onClick={() => setView(isAuthenticated ? 'admin' : 'login')}
-                    className="mt-4 text-[8px] text-zinc-800 uppercase tracking-[0.3em] hover:text-zinc-500 transition-colors"
-                  >
-                    Acesso Restrito
-                  </button>
+                  <div className="pt-12">
+                    <button 
+                      onClick={() => setView(isAuthenticated ? 'admin' : 'login')}
+                      className="text-[7px] text-zinc-700 uppercase tracking-[0.4em] hover:text-zinc-400 transition-colors"
+                    >
+                      Acesso Restrito
+                    </button>
+                  </div>
                 </div>
              </div>
           </footer>
