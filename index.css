@@ -1,0 +1,116 @@
+
+/* PV Sports - Clean Flexbox Header & Announcement Bar */
+
+/* 1. Spacing and Flow for Announcement Bar */
+/* Target the announcement bar container by its specific classes */
+.bg-white.text-black.h-10.flex.items-center.justify-center {
+  margin-bottom: 15px !important;
+  position: relative !important;
+  width: 100% !important;
+  z-index: 60 !important;
+}
+
+/* 2. Header Layout Reset */
+/* We remove fixed positioning to follow the document flow as requested */
+header {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  background-color: #000 !important;
+  padding: 20px 0 !important;
+  border-bottom: 1px solid #18181b !important;
+  z-index: 50 !important;
+  transform: none !important;
+}
+
+/* 3. Flexbox Grid for Perfect Centering */
+/* We use the flex: 1 trick on side elements to force the middle element to the center */
+header .container > div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 15px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Rearranging items using the 'order' property since we can't change HTML */
+
+/* Logo Container (1st child in JSX) - Move to Center (Order 2) */
+header .container > div > div:nth-child(1) {
+  order: 2 !important;
+  flex: 0 0 auto !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+
+/* Search Bar Container (2nd child in JSX) - Move to Left (Order 1) */
+header .container > div > div:nth-child(2) {
+  order: 1 !important;
+  flex: 1 1 0% !important; /* Takes equal space to balance the right side */
+  display: flex !important;
+  justify-content: flex-start !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: relative !important;
+  left: auto !important;
+  transform: none !important;
+}
+
+/* Admin Area Container (3rd child in JSX) - Move to Right (Order 3) */
+header .container > div > div:nth-child(3) {
+  order: 3 !important;
+  flex: 1 1 0% !important; /* Takes equal space to balance the left side */
+  display: flex !important;
+  justify-content: flex-end !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: relative !important;
+  right: auto !important;
+  transform: none !important;
+}
+
+/* 4. Responsive Logo Sizing */
+header img {
+  height: auto !important;
+  max-width: 130px !important; /* Mobile size */
+  object-fit: contain !important;
+  display: block !important;
+}
+
+@media (min-width: 768px) {
+  header img {
+    max-width: 200px !important; /* Desktop size */
+  }
+}
+
+/* 5. Search Bar internal constraints */
+/* Prevent the search bar from becoming too wide on large screens */
+header .container > div > div:nth-child(2) > div {
+  width: 100% !important;
+  max-width: 280px !important;
+}
+
+/* 6. Main Content Reset */
+/* Since header is now in the document flow, we don't need padding-top hacks */
+main {
+  padding-top: 0 !important;
+}
+
+/* 7. Mobile Adjustments */
+@media (max-width: 640px) {
+  header .container > div {
+    gap: 10px !important;
+  }
+  /* On very small screens, we ensure the logo has priority */
+  header img {
+    max-width: 110px !important;
+  }
+}

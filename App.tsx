@@ -2,6 +2,7 @@
 /** @AI_LOCKED */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { Instagram, MessageCircle } from 'lucide-react';
 import { Product, AppView, Category, Subcategory, AppSettings, Logo, TeamPVItem, Announcement } from './types';
 import * as storage from './services/storage';
 import Header from './components/Header';
@@ -214,18 +215,56 @@ const App: React.FC = () => {
             )}
           </main>
 
-          <footer className="bg-zinc-950 py-20 border-t border-zinc-900">
+          <footer className="bg-zinc-900 pt-20 pb-10 border-t border-zinc-800">
              <div className="container mx-auto px-4 text-center">
-                <div className="flex justify-center mb-8">
+                {/* 1. Logo */}
+                <div className="flex justify-center mb-8 cursor-pointer hover:scale-105 transition-transform duration-300" onClick={handleResetFilters}>
                   {activeLogo?.midia_url ? (
-                    <img src={activeLogo.midia_url} alt="PV Sports" className="h-12 object-contain grayscale opacity-30" />
+                    <img src={activeLogo.midia_url} alt="PV Sports" className="h-20 object-contain" />
                   ) : (
-                    <h1 className="text-xl font-black italic tracking-tighter text-zinc-800">PV<span className="text-zinc-900">SPORTS</span></h1>
+                    <h1 className="text-2xl font-black italic tracking-tighter text-white">PV<span className="text-green-500">SPORTS</span></h1>
                   )}
                 </div>
-                <p className="text-[10px] text-zinc-700 uppercase tracking-[0.5em] font-black">
-                  &copy; {currentYear} PV Sports Heritage &mdash; All Rights Reserved
+
+                {/* 2. Social Buttons */}
+                <div className="flex justify-center gap-4 mb-8">
+                  <a 
+                    href="https://instagram.com/pvsports16" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:scale-105 transition-all duration-300"
+                  >
+                    <Instagram className="w-4 h-4 text-pink-500" />
+                    Instagram
+                  </a>
+                  <a 
+                    href="https://wa.me/+55998538567" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:scale-105 transition-all duration-300"
+                  >
+                    <MessageCircle className="w-4 h-4 text-green-500" />
+                    WhatsApp
+                  </a>
+                </div>
+
+                {/* 3. Copyright */}
+                <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-bold mb-8">
+                  &copy; 2021 PV Sports. Todos os direitos reservados.
                 </p>
+
+                {/* 4. Divider */}
+                <div className="w-full h-[1px] bg-white/[0.08] mb-8"></div>
+
+                {/* 5. Credits */}
+                <div className="space-y-2">
+                  <p className="text-[9px] text-zinc-600 uppercase tracking-widest font-bold">
+                    Site feito por <a href="https://instagram.com/azvd.ai" target="_blank" rel="noopener noreferrer" className="underline text-zinc-400 hover:text-white transition-colors">AZVD.AI</a>
+                  </p>
+                  <p className="text-[9px] text-zinc-700 uppercase tracking-widest font-bold">
+                    Desenvolvedor: <span className="underline">Gabriel Azevedo</span>
+                  </p>
+                </div>
              </div>
           </footer>
 
