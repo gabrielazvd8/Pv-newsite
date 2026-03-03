@@ -296,6 +296,16 @@ const App: React.FC = () => {
               <p className="text-[9px] text-zinc-700 uppercase tracking-widest font-bold">
                 Desenvolvedor: <span className="underline">Gabriel Azevedo</span>
               </p>
+
+              {/* 6. Admin Access - Discrete */}
+              <div className="pt-12">
+                <a 
+                  href="https://admin.pvsports.com.br"
+                  className="text-[7px] text-zinc-800 uppercase tracking-[0.4em] hover:text-zinc-500 transition-colors opacity-40 hover:opacity-100"
+                >
+                  Acesso restrito
+                </a>
+              </div>
             </div>
          </div>
       </footer>
