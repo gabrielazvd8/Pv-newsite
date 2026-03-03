@@ -11,8 +11,16 @@ interface TeamPVSectionProps {
 const TeamPVSection: React.FC<TeamPVSectionProps> = ({ items }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % items.length);
@@ -87,13 +95,13 @@ const TeamPVSection: React.FC<TeamPVSectionProps> = ({ items }) => {
           <div className="overflow-hidden rounded-[40px]">
             <motion.div 
               className="flex"
-              animate={{ x: `-${currentIndex * 100}%` }}
+              animate={{ x: isDesktop ? `-${currentIndex * (100 / 3)}%` : `-${currentIndex * 100}%` }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
               {items.map((item) => (
                 <div 
                   key={item.id}
-                  className="flex-shrink-0 w-full px-4"
+                  className="flex-shrink-0 w-full lg:w-1/3 px-4"
                 >
                   <div className="relative aspect-[9/16] md:aspect-[16/9] rounded-[40px] overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl group/card">
                     <img 
