@@ -9,14 +9,19 @@ interface HeaderProps {
   onSearchChange: (q: string) => void;
   activeLogo?: Logo;
   onResetFilter: () => void;
+  showAnnouncement?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   isScrolled, searchQuery, onSearchChange,
-  activeLogo, onResetFilter
+  activeLogo, onResetFilter, showAnnouncement
 }) => {
   return (
-    <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-1000 ${isScrolled ? 'bg-black/95 backdrop-blur-3xl py-4 border-b border-zinc-900/50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : 'bg-transparent py-10'}`}>
+    <header className={`left-0 w-full z-50 transition-all duration-1000 ${
+      isScrolled 
+        ? 'fixed top-0 bg-black/95 backdrop-blur-3xl py-4 border-b border-zinc-900/50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]' 
+        : `absolute ${showAnnouncement ? 'top-10' : 'top-0'} bg-transparent py-10`
+    }`}>
       <div className="container mx-auto px-4">
         {/* Estrutura flexível: justify-center no topo, justify-start no scroll */}
         <div className={`relative flex items-center transition-all duration-1000 ${isScrolled ? 'justify-start gap-4 md:gap-8' : 'justify-center'}`}>
@@ -31,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({
                   src={activeLogo.midia_url} 
                   alt="PV Sports" 
                   className="object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all duration-1000" 
-                  style={{ height: isScrolled ? '40px' : '80px', width: 'auto' }}
+                  style={{ height: isScrolled ? '50px' : '85px', width: 'auto' }}
                 />
              ) : (
                 <h1 className="text-2xl font-black italic tracking-tighter text-green-500">PV<span className="text-white">SPORTS</span></h1>

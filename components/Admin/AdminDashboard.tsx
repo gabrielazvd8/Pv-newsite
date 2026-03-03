@@ -371,7 +371,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8 md:mb-12">
         <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">PV ADMIN <span className="text-green-500">PRO</span></h1>
         <div className="flex gap-3 w-full md:w-auto">
-          <button onClick={onBack} className="flex-1 md:flex-none px-6 py-3 bg-zinc-900 text-[10px] uppercase font-black rounded-xl border border-zinc-800 hover:border-zinc-600 transition-all">Vitrine</button>
+          <button onClick={() => window.location.href = 'https://pvsports.com.br'} className="flex-1 md:flex-none px-6 py-3 bg-zinc-900 text-[10px] uppercase font-black rounded-xl border border-zinc-800 hover:border-zinc-600 transition-all">Vitrine</button>
           <button onClick={onLogout} className="flex-1 md:flex-none px-6 py-3 bg-red-950/20 text-red-500 text-[10px] uppercase font-black rounded-xl border border-red-950/40 hover:bg-red-950/60 transition-all">Sair</button>
         </div>
       </div>

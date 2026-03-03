@@ -164,15 +164,18 @@ const App: React.FC = () => {
       {settings.announcementBarActive && announcements.length > 0 && (
         <AnnouncementBar announcements={announcements} />
       )}
-      <Header isScrolled={isScrolled} searchQuery={searchQuery} onSearchChange={setSearchQuery} activeLogo={activeLogo} onResetFilter={handleResetFilters} />
+      <Header 
+        isScrolled={isScrolled} 
+        searchQuery={searchQuery} 
+        onSearchChange={setSearchQuery} 
+        activeLogo={activeLogo} 
+        onResetFilter={handleResetFilters} 
+        showAnnouncement={settings.announcementBarActive && announcements.length > 0}
+      />
       
       <main className="flex-grow">
         <Hero />
         
-        <div className={`transition-all duration-700 container mx-auto px-4 mb-20 ${isScrolled ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
-          <SearchBar value={searchQuery} onChange={setSearchQuery} neonEffect={true} />
-        </div>
-
         {!isBrowsing && (
           <div className="space-y-0">
             {settings.promoSectionActive && promoProducts.length > 0 && (
