@@ -96,7 +96,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onCancel }) => {
           </button>
           <button 
             type="button" 
-            onClick={onCancel} 
+            onClick={() => window.location.href = 'https://pvsports.com.br'} 
             className="w-full text-zinc-600 text-[10px] uppercase font-bold tracking-widest"
             disabled={isLoading}
           >
