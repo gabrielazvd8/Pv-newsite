@@ -103,20 +103,20 @@ const TeamPVSection: React.FC<TeamPVSectionProps> = ({ items }) => {
                   key={item.id}
                   className="flex-shrink-0 w-full lg:w-1/3 px-4"
                 >
-                  <div className="relative aspect-[9/16] md:aspect-[16/9] rounded-[40px] overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl group/card">
+                  <div className="relative aspect-[9/16] rounded-[40px] overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl group/card">
                     <img 
                       src={item.image} 
                       alt={item.name}
                       className="w-full h-full object-cover transition-transform duration-1000 group-hover/card:scale-105"
                       loading="lazy"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://placehold.co/800x450/18181b/fafafa?text=PV+Sports+Member';
+                        (e.target as HTMLImageElement).src = 'https://placehold.co/450x800/18181b/fafafa?text=PV+Sports+Member';
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80" />
                     
                     <div className="absolute bottom-10 left-8 right-8 text-left">
-                      <p className="text-white text-3xl md:text-5xl font-black italic uppercase tracking-tighter mb-4">
+                      <p className="text-white text-2xl md:text-3xl font-black italic uppercase tracking-tighter mb-4">
                         {item.name}
                       </p>
                       <div className="flex items-center gap-3">
