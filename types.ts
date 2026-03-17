@@ -35,9 +35,11 @@ export interface Product {
   video_cloudinary_id?: string | null;
   isProntaEntrega: boolean;
   isLancamento: boolean;
-  isPromo: boolean;
-  price?: string;
-  oldPrice?: string;
+  isPromo: boolean; // Mantido para compatibilidade se necessário, mas isOnSale será o principal
+  isOnSale?: boolean;
+  price?: string | number;
+  oldPrice?: string | number;
+  promoPrice?: string | number;
   ativo: boolean;
   criadoEm?: any;
 }

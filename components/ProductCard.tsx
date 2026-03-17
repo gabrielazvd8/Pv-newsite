@@ -75,16 +75,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
             </h3>
           </div>
           <div className="text-right">
-            {product.oldPrice && (
-              <p className="text-[10px] line-through text-zinc-600 mb-0.5">
-                R$ {product.oldPrice}
-              </p>
-            )}
-            {product.price && (
-              <p className={`text-sm font-bold ${product.isPromo ? 'text-red-500' : 'text-zinc-500'}`}>
-                R$ {product.price}
-              </p>
-            )}
+            {product.isPromo && product.oldPrice ? (
+              <div className="flex flex-col justify-end min-h-[36px]">
+                <p className="text-[10px] line-through text-zinc-600 mb-0.5">
+                  R$ {product.oldPrice}
+                </p>
+                <p className="text-sm font-bold text-red-500">
+                  R$ {product.price}
+                </p>
+              </div>
+            ) : product.price ? (
+              <div className="flex flex-col justify-end min-h-[36px]">
+                <p className="text-sm font-bold text-zinc-500">
+                  R$ {product.price}
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

@@ -350,8 +350,10 @@ export const saveProduct = async (p: Partial<Product>) => {
     isProntaEntrega: p.isProntaEntrega ?? false,
     isLancamento: p.isLancamento ?? false,
     isPromo: p.isPromo ?? false,
+    isOnSale: p.isOnSale ?? false,
     price: p.price || '',
-    oldPrice: p.oldPrice || '',
+    oldPrice: p.oldPrice || null,
+    promoPrice: p.promoPrice || null,
     ativo: p.ativo ?? true,
     atualizadoEm: serverTimestamp()
   };

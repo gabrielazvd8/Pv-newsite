@@ -36,6 +36,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   });
   
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [formIsPromo, setFormIsPromo] = useState(false);
   const [currentGallery, setCurrentGallery] = useState<{url: string, cid: string}[]>([]);
   const [currentVideo, setCurrentVideo] = useState<{url: string, cid: string} | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -64,6 +65,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
     return () => unsubscribe();
   }, [onLogout]);
+
+  useEffect(() => {
+    if (editingItem && tab === 'products') {
+      setFormIsPromo(editingItem.isPromo || false);
+    } else {
+      setFormIsPromo(false);
+    }
+  }, [editingItem, tab]);
 
   const loadData = async () => {
     try {
@@ -179,7 +188,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     const name = fd.get('name') as string;
     const catId = fd.get('categoryId') as string;
     const subId = fd.get('subcategoryId') as string;
+    const isPromo = fd.get('isPromo') === 'on';
+    
+    const price = fd.get('price') as string;
+    const oldPrice = fd.get('oldPrice') as string;
+    const promoPrice = fd.get('promoPrice') as string;
+
     if (!name || !catId || !subId || currentGallery.length === 0) return alert("Preencha Nome, Categoria, Subcategoria e Mídia.");
+
+    if (isPromo) {
+      if (!oldPrice || !promoPrice) return alert("Para produtos em promoção, Preço Antigo e Preço Promocional são obrigatórios.");
+      const pOld = parseFloat(oldPrice.replace(',', '.'));
+      const pPromo = parseFloat(promoPrice.replace(',', '.'));
+      if (pPromo >= pOld) {
+        return alert("O preço promocional deve ser menor que o preço antigo.");
+      }
+    } else {
+      if (!price) return alert("O campo Preço é obrigatório.");
+    }
+
     const cat = categories.find(c => c.id === catId);
     const sub = subcategories.find(s => s.id === subId);
     setIsUploading(true);
@@ -196,9 +223,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
         cloudinary_ids: currentGallery.map(g => g.cid),
         video: currentVideo?.url || null,
         video_cloudinary_id: currentVideo?.cid || null,
-        price: fd.get('price') as string,
-        oldPrice: fd.get('oldPrice') as string,
-        isPromo: fd.get('isPromo') === 'on',
+        price: isPromo ? promoPrice : price,
+        oldPrice: isPromo ? oldPrice : null,
+        promoPrice: isPromo ? promoPrice : null,
+        isPromo,
+        isOnSale: isPromo,
         isLancamento: fd.get('isLancamento') === 'on',
         isProntaEntrega: fd.get('isProntaEntrega') === 'on',
         ativo: fd.get('ativo') === 'on'
@@ -461,9 +490,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                         </select>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <input type="text" name="price" placeholder="Preço (R$)" defaultValue={editingItem?.price} className="bg-black border border-zinc-800 p-4 rounded-xl text-sm outline-none focus:border-green-500" />
+                        {!formIsPromo ? (
+                          <input type="text" name="price" placeholder="Preço (R$)" defaultValue={editingItem?.price} className="bg-black border border-zinc-800 p-4 rounded-xl text-sm outline-none focus:border-green-500 w-full" />
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            <input type="text" name="oldPrice" placeholder="Preço Antigo" defaultValue={editingItem?.oldPrice} className="bg-black border border-zinc-800 p-4 rounded-xl text-sm outline-none focus:border-green-500 w-full" />
+                            <input type="text" name="promoPrice" placeholder="Preço Promo" defaultValue={editingItem?.promoPrice} className="bg-black border border-zinc-800 p-4 rounded-xl text-sm outline-none focus:border-green-500 w-full" />
+                          </div>
+                        )}
                         <div className="flex flex-col gap-2 p-4 bg-black border border-zinc-800 rounded-xl">
-                           <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isPromo" defaultChecked={editingItem?.isPromo} className="accent-red-500" /> PROMO</label>
+                           <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer">
+                             <input 
+                               type="checkbox" 
+                               name="isPromo" 
+                               checked={formIsPromo} 
+                               onChange={(e) => setFormIsPromo(e.target.checked)}
+                               className="accent-red-500" 
+                             /> PROMO
+                           </label>
                            <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isLancamento" defaultChecked={editingItem?.isLancamento} className="accent-white" /> LANÇAMENTO</label>
                            <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isProntaEntrega" defaultChecked={editingItem?.isProntaEntrega} className="accent-green-500" /> PRONTA</label>
                            <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="ativo" defaultChecked={editingItem ? (editingItem.ativo !== false) : true} className="accent-green-500" /> ATIVO</label>

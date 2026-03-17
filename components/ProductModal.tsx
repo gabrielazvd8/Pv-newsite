@@ -97,15 +97,21 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
             <h2 className="text-4xl font-black text-white leading-none mb-6 italic uppercase tracking-tighter">
               {product.name}
             </h2>
-            <div className="flex items-center gap-4 mb-8">
-              {product.oldPrice && (
-                <p className="text-xl line-through text-zinc-600 font-light">
-                  R$ {product.oldPrice}
+            <div className="mb-8">
+              {product.isPromo && product.oldPrice ? (
+                <div className="flex items-center gap-4">
+                  <p className="text-xl line-through text-zinc-600 font-light">
+                    R$ {product.oldPrice}
+                  </p>
+                  <p className="text-3xl font-black text-red-500">
+                    R$ {product.price}
+                  </p>
+                </div>
+              ) : product.price ? (
+                <p className="text-3xl font-black text-zinc-100">
+                  R$ {product.price}
                 </p>
-              )}
-              <p className={`text-3xl font-black ${product.isPromo ? 'text-red-500' : 'text-zinc-100'}`}>
-                R$ {product.price}
-              </p>
+              ) : null}
             </div>
             
             <div className={`w-12 h-1 mb-8 ${product.isPromo ? 'bg-red-500' : 'bg-green-500'}`} />
