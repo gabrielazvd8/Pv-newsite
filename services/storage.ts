@@ -347,6 +347,7 @@ export const saveProduct = async (p: Partial<Product>) => {
     cloudinary_ids: p.cloudinary_ids || [],
     video: p.video || null,
     video_cloudinary_id: p.video_cloudinary_id || null,
+    featuredMediaUrl: p.featuredMediaUrl || null,
     isProntaEntrega: p.isProntaEntrega ?? false,
     isLancamento: p.isLancamento ?? false,
     isPromo: p.isPromo ?? false,

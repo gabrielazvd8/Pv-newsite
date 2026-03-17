@@ -8,7 +8,12 @@ interface ProductModalProps {
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
-  const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [activeMediaIdx, setActiveMediaIdx] = useState(0);
+
+  const productMedias = product ? [
+    ...(product.images || []).map(url => ({ url, type: 'image' })),
+    ...(product.video ? [{ url: product.video, type: 'video' }] : [])
+  ] : [];
 
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -16,7 +21,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
     };
     if (product) {
       document.body.style.overflow = 'hidden';
-      setActiveImageIdx(0);
+      const featuredIdx = productMedias.findIndex(m => m.url === product.featuredMediaUrl);
+      setActiveMediaIdx(featuredIdx !== -1 ? featuredIdx : 0);
     }
     window.addEventListener('keydown', handleEsc);
     return () => {
@@ -27,7 +33,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
 
   if (!product) return null;
 
-  const productImages = product.images || [product.image];
+  const currentMedia = productMedias[activeMediaIdx];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -50,36 +56,47 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
 
         {/* Galeria Lado Esquerdo */}
         <div className="w-full md:w-3/5 h-[45vh] md:h-auto overflow-hidden relative group bg-black">
-          <img 
-            src={productImages[activeImageIdx]} 
-            alt={product.name}
-            className="w-full h-full object-contain transition-all duration-700"
-          />
+          {currentMedia.type === 'video' ? (
+            <video 
+              src={currentMedia.url} 
+              className="w-full h-full object-contain"
+              controls
+              autoPlay
+              muted
+              loop
+            />
+          ) : (
+            <img 
+              src={currentMedia.url} 
+              alt={product.name}
+              className="w-full h-full object-contain transition-all duration-700"
+            />
+          )}
           
           {/* Navegação da Galeria */}
-          {productImages.length > 1 && (
+          {productMedias.length > 1 && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-              {productImages.map((_, idx) => (
+              {productMedias.map((_, idx) => (
                 <button 
                   key={idx} 
-                  onClick={() => setActiveImageIdx(idx)}
-                  className={`w-2 h-2 rounded-full transition-all ${idx === activeImageIdx ? 'bg-green-500 w-8 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-white/30 hover:bg-white/60'}`}
+                  onClick={() => setActiveMediaIdx(idx)}
+                  className={`w-2 h-2 rounded-full transition-all ${idx === activeMediaIdx ? 'bg-green-500 w-8 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-white/30 hover:bg-white/60'}`}
                 />
               ))}
             </div>
           )}
 
           {/* Botões Próximo/Anterior */}
-          {productImages.length > 1 && (
+          {productMedias.length > 1 && (
             <>
               <button 
-                onClick={() => setActiveImageIdx(prev => (prev === 0 ? productImages.length - 1 : prev - 1))}
+                onClick={() => setActiveMediaIdx(prev => (prev === 0 ? productMedias.length - 1 : prev - 1))}
                 className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-green-500 hover:text-black rounded-full text-white opacity-0 group-hover:opacity-100 transition-all"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
               </button>
               <button 
-                onClick={() => setActiveImageIdx(prev => (prev === productImages.length - 1 ? 0 : prev + 1))}
+                onClick={() => setActiveMediaIdx(prev => (prev === productMedias.length - 1 ? 0 : prev + 1))}
                 className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-green-500 hover:text-black rounded-full text-white opacity-0 group-hover:opacity-100 transition-all"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
@@ -121,15 +138,21 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
             </div>
 
             {/* Thumbnail Grid */}
-            {productImages.length > 1 && (
+            {productMedias.length > 1 && (
               <div className="grid grid-cols-4 gap-2 mb-12">
-                {productImages.map((img, idx) => (
+                {productMedias.map((media, idx) => (
                   <button 
                     key={idx} 
-                    onClick={() => setActiveImageIdx(idx)}
-                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${idx === activeImageIdx ? 'border-green-500 scale-105' : 'border-zinc-800 opacity-60 hover:opacity-100'}`}
+                    onClick={() => setActiveMediaIdx(idx)}
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all relative ${idx === activeMediaIdx ? 'border-green-500 scale-105' : 'border-zinc-800 opacity-60 hover:opacity-100'}`}
                   >
-                    <img src={img} className="w-full h-full object-cover" alt="" />
+                    {media.type === 'video' ? (
+                      <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-zinc-500" fill="currentColor" viewBox="0 0 24 24"><path d="M10 15.5l6-3.5-6-3.5v7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8-8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                      </div>
+                    ) : (
+                      <img src={media.url} className="w-full h-full object-cover" alt="" />
+                    )}
                   </button>
                 ))}
               </div>

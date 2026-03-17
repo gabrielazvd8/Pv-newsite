@@ -37,6 +37,7 @@ export interface Product {
   isLancamento: boolean;
   isPromo: boolean; 
   isOnSale: boolean;
+  featuredMediaUrl?: string | null;
   price?: string | null;
   oldPrice?: string | null;
   promoPrice?: string | null;

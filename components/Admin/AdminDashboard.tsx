@@ -2,6 +2,7 @@
 /** @AI_LOCKED */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Star } from 'lucide-react';
 import * as storage from '../../services/storage';
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem, Announcement } from '../../types';
 // Fix: Import onAuthStateChanged and auth exclusively from storage service to resolve environment-specific export issues
@@ -38,6 +39,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formIsPromo, setFormIsPromo] = useState(false);
   const [formCategoryId, setFormCategoryId] = useState<string>('');
+  const [featuredMediaUrl, setFeaturedMediaUrl] = useState<string | null>(null);
   const [currentGallery, setCurrentGallery] = useState<{url: string, cid: string}[]>([]);
   const [currentVideo, setCurrentVideo] = useState<{url: string, cid: string} | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -71,9 +73,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     if (editingItem && tab === 'products') {
       setFormIsPromo(editingItem.isPromo || false);
       setFormCategoryId(editingItem.categoryId || '');
+      setFeaturedMediaUrl(editingItem.featuredMediaUrl || null);
     } else {
       setFormIsPromo(false);
       setFormCategoryId('');
+      setFeaturedMediaUrl(null);
     }
   }, [editingItem, tab]);
 
@@ -226,6 +230,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
         subcategoryName: sub?.nome,
         images: currentGallery.map(g => g.url),
         cloudinary_ids: currentGallery.map(g => g.cid),
+        featuredMediaUrl: featuredMediaUrl || (currentGallery[0]?.url || currentVideo?.url || null),
         video: currentVideo?.url || null,
         video_cloudinary_id: currentVideo?.cid || null,
         price: isPromo ? promoPrice : (price || null),
@@ -366,12 +371,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     setCurrentGallery([]); 
     setCurrentVideo(null);
     setFormCategoryId('');
+    setFeaturedMediaUrl(null);
     const f = document.querySelector('form'); if (f) f.reset();
   };
 
   const startEdit = (item: any) => {
     setEditingItem(item);
     if (tab === 'products') {
+      setFeaturedMediaUrl(item.featuredMediaUrl || null);
       const g = (item.images || []).map((url: string, i: number) => ({ url, cid: item.cloudinary_ids?.[i] || '' }));
       setCurrentGallery(g); setCurrentVideo(item.video ? { url: item.video, cid: item.video_cloudinary_id } : null);
     } else if (tab === 'settings' && subTab === 'logo') {
@@ -546,6 +553,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                       {currentGallery.map((img, i) => (
                         <div key={i} className={`relative aspect-square overflow-hidden border border-zinc-800 ${tab === 'subcategories' ? 'rounded-full' : 'rounded-lg'}`}>
                            <img src={img.url} className="w-full h-full object-cover" />
+                           {tab === 'products' && (
+                             <button 
+                               type="button"
+                               onClick={() => setFeaturedMediaUrl(img.url)}
+                               className={`absolute top-1 left-1 p-1 rounded-full transition-all z-20 ${featuredMediaUrl === img.url ? 'bg-yellow-500 text-black' : 'bg-black/50 text-white hover:bg-black/80'}`}
+                             >
+                               <Star className="w-2.5 h-2.5" fill={featuredMediaUrl === img.url ? "currentColor" : "none"} />
+                             </button>
+                           )}
                            <button 
                              type="button"
                              onClick={() => setCurrentGallery(prev => prev.filter((_, idx) => idx !== i))}
@@ -558,6 +574,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                       {currentVideo && tab === 'products' && (
                         <div className="relative aspect-square overflow-hidden border border-zinc-800 rounded-lg bg-zinc-900 flex items-center justify-center">
                            <svg className="w-8 h-8 text-zinc-700" fill="currentColor" viewBox="0 0 24 24"><path d="M10 15.5l6-3.5-6-3.5v7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8-8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                           <button 
+                             type="button"
+                             onClick={() => setFeaturedMediaUrl(currentVideo.url)}
+                             className={`absolute top-1 left-1 p-1 rounded-full transition-all z-20 ${featuredMediaUrl === currentVideo.url ? 'bg-yellow-500 text-black' : 'bg-black/50 text-white hover:bg-black/80'}`}
+                           >
+                             <Star className="w-2.5 h-2.5" fill={featuredMediaUrl === currentVideo.url ? "currentColor" : "none"} />
+                           </button>
                            <button 
                              type="button"
                              onClick={() => setCurrentVideo(null)}

@@ -11,6 +11,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
   if (product.ativo === false) return null;
 
   const secondImage = product.images && product.images.length > 1 ? product.images[1] : null;
+  const mainMedia = product.featuredMediaUrl || product.image || (product.images && product.images[0]);
+  const isVideo = mainMedia === product.video;
 
   return (
     <div 
@@ -18,13 +20,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
       onClick={onClick}
     >
       <div className="relative overflow-hidden aspect-[3/4] bg-zinc-900 rounded-3xl mb-6 shadow-2xl transition-all duration-500 group-hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] group-hover:-translate-y-2">
-        {/* Main Image */}
-        <img 
-          src={product.image} 
-          alt={product.name}
-          className={`w-full h-full object-cover grayscale-[0.2] transition-all duration-1000 group-hover:scale-110 group-hover:grayscale-0 ${secondImage ? 'group-hover:opacity-0' : ''}`}
-          loading="lazy"
-        />
+        {/* Main Media */}
+        {isVideo ? (
+          <video 
+            src={mainMedia!} 
+            className={`w-full h-full object-cover grayscale-[0.2] transition-all duration-1000 group-hover:scale-110 group-hover:grayscale-0 ${secondImage ? 'group-hover:opacity-0' : ''}`}
+            muted
+            playsInline
+            autoPlay
+            loop
+          />
+        ) : (
+          <img 
+            src={mainMedia || ''} 
+            alt={product.name}
+            className={`w-full h-full object-cover grayscale-[0.2] transition-all duration-1000 group-hover:scale-110 group-hover:grayscale-0 ${secondImage ? 'group-hover:opacity-0' : ''}`}
+            loading="lazy"
+          />
+        )}
         
         {/* Hover Image (Swap) */}
         {secondImage && (
