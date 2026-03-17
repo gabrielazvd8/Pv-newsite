@@ -2,10 +2,11 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
   getFirestore,
-  initializeFirestore, doc, setDoc, getDoc, getDocs, 
+  doc, setDoc, getDoc, getDocs, 
   collection, addDoc, updateDoc, deleteDoc, 
   query, where, orderBy, serverTimestamp, 
-  writeBatch 
+  writeBatch,
+  getDocFromServer
 } from "firebase/firestore";
 // Fix: Separated auth value imports and type-only imports to resolve issues with exported member recognition.
 import { 
@@ -29,19 +30,28 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 /**
- * INITIALIZATION WITH LONG POLLING
- * Fix: Configurado para forçar long polling e desativar streams nativos para bypassar bloqueios de rede comuns.
+ * INITIALIZATION
+ * Simplificado para usar getFirestore padrão, que gerencia automaticamente a melhor conexão.
  */
-let db;
-try {
-  db = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-  });
-} catch (e) {
-  db = getFirestore(app);
-}
-
+const db = getFirestore(app);
 const auth = getAuth(app);
+
+/**
+ * TESTE DE CONEXÃO
+ * Valida se o Firestore está acessível no boot da aplicação.
+ */
+async function testConnection() {
+  try {
+    // Tenta buscar um documento inexistente apenas para validar o handshake com o servidor
+    await getDocFromServer(doc(db, 'system', 'connection_test'));
+    console.log("Firestore connection established successfully.");
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes('client is offline') || error.message.includes('Could not reach'))) {
+      console.error("Firestore connection failed: The client is offline or backend is unreachable. Check your Firebase configuration.");
+    }
+  }
+}
+testConnection();
 
 // Exporting modular members from services/storage to prevent cross-file import issues in some environments
 export { auth, onAuthStateChanged };
