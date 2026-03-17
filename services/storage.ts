@@ -334,14 +334,14 @@ export const getProducts = async (): Promise<Product[]> => {
 };
 
 export const saveProduct = async (p: Partial<Product>) => {
-  if (!p.categoryId || !p.subcategoryId) throw new Error("Categoria e Subcategoria são obrigatórias");
+  if (!p.categoryId) throw new Error("É obrigatório selecionar uma categoria para o produto.");
   const data = {
     name: p.name,
     description: p.description,
     categoryId: p.categoryId,
     categoryName: p.categoryName || '',
-    subcategoryId: p.subcategoryId,
-    subcategoryName: p.subcategoryName || '',
+    subcategoryId: p.subcategoryId || null,
+    subcategoryName: p.subcategoryName || null,
     image: p.images?.[0] || '',
     images: p.images || [],
     cloudinary_ids: p.cloudinary_ids || [],

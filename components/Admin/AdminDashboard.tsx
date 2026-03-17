@@ -37,6 +37,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formIsPromo, setFormIsPromo] = useState(false);
+  const [formCategoryId, setFormCategoryId] = useState<string>('');
   const [currentGallery, setCurrentGallery] = useState<{url: string, cid: string}[]>([]);
   const [currentVideo, setCurrentVideo] = useState<{url: string, cid: string} | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -69,8 +70,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   useEffect(() => {
     if (editingItem && tab === 'products') {
       setFormIsPromo(editingItem.isPromo || false);
+      setFormCategoryId(editingItem.categoryId || '');
     } else {
       setFormIsPromo(false);
+      setFormCategoryId('');
     }
   }, [editingItem, tab]);
 
@@ -194,7 +197,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     const oldPrice = fd.get('oldPrice') as string;
     const promoPrice = fd.get('promoPrice') as string;
 
-    if (!name || !catId || !subId || currentGallery.length === 0) return alert("Preencha Nome, Categoria, Subcategoria e Mídia.");
+    if (!name || !catId || currentGallery.length === 0) {
+      if (!catId) return alert("É obrigatório selecionar uma categoria para o produto.");
+      return alert("Preencha Nome, Categoria e Mídia.");
+    }
 
     if (isPromo) {
       if (!oldPrice || !promoPrice) return alert("Para produtos em promoção, Preço Antigo e Preço Promocional são obrigatórios.");
@@ -357,7 +363,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   };
 
   const resetForm = () => {
-    setEditingItem(null); setCurrentGallery([]); setCurrentVideo(null);
+    setEditingItem(null); 
+    setCurrentGallery([]); 
+    setCurrentVideo(null);
+    setFormCategoryId('');
     const f = document.querySelector('form'); if (f) f.reset();
   };
 
@@ -480,13 +489,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                         <textarea name="description" defaultValue={editingItem?.description} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-xl h-24 focus:border-green-500 outline-none" />
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <select name="categoryId" defaultValue={editingItem?.categoryId} className="bg-black border border-zinc-800 p-4 text-sm rounded-xl outline-none focus:border-green-500" required>
+                        <select 
+                          name="categoryId" 
+                          value={formCategoryId} 
+                          onChange={(e) => setFormCategoryId(e.target.value)}
+                          className="bg-black border border-zinc-800 p-4 text-sm rounded-xl outline-none focus:border-green-500" 
+                          required
+                        >
                           <option value="">Categoria...</option>
                           {categories.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                         </select>
-                        <select name="subcategoryId" defaultValue={editingItem?.subcategoryId} className="bg-black border border-zinc-800 p-4 text-sm rounded-xl outline-none focus:border-green-500" required>
-                          <option value="">Subcategoria...</option>
-                          {subcategories.map(s => <option key={s.id} value={s.id}>{s.nome} ({s.categoriaNome})</option>)}
+                        <select 
+                          name="subcategoryId" 
+                          defaultValue={editingItem?.subcategoryId} 
+                          className="bg-black border border-zinc-800 p-4 text-sm rounded-xl outline-none focus:border-green-500"
+                        >
+                          <option value="">Subcategoria (Opcional)...</option>
+                          {subcategories
+                            .filter(s => !formCategoryId || s.categoriaId === formCategoryId)
+                            .map(s => <option key={s.id} value={s.id}>{s.nome}</option>)
+                          }
                         </select>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -26,8 +26,8 @@ export interface Product {
   description: string; // descricao
   categoryId: string; // categoriaId
   categoryName?: string; // categoriaNome
-  subcategoryId: string; // subcategoriaId (obrigatório agora)
-  subcategoryName?: string; // subcategoriaNome
+  subcategoryId?: string | null; // subcategoriaId (opcional)
+  subcategoryName?: string | null; // subcategoriaNome
   image: string; // Mantido para compatibilidade (primeira imagem)
   images: string[]; // midias.imagens (1 a 4)
   cloudinary_ids: string[]; // IDs das imagens para deleção
