@@ -1,5 +1,7 @@
 
 import React from 'react';
+import { motion } from 'framer-motion';
+import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
   value: string;
@@ -7,45 +9,56 @@ interface SearchBarProps {
   neonEffect?: boolean;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ value, onChange, neonEffect = false }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ value, onChange, neonEffect = true }) => {
   return (
-    <div className="relative group w-full">
-      {/* Neon Glow Halo */}
-      {neonEffect && (
-        <div className="absolute inset-0 bg-green-500/20 blur-[40px] rounded-full opacity-40 group-focus-within:opacity-80 transition-opacity duration-700 pointer-events-none"></div>
-      )}
-      
-      <div className="relative z-10 flex items-center">
-        <input
-          type="text"
-          placeholder="Busque por time, seleção ou jogador..."
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={`w-full bg-zinc-950 border border-zinc-800 rounded-full px-10 py-5 text-sm font-medium focus:outline-none transition-all duration-500 placeholder:text-zinc-700 ${neonEffect ? 'focus:border-green-500/50 shadow-2xl' : 'bg-zinc-900/40 border-zinc-800/50 focus:border-green-500/50'}`}
+    <div className="relative w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        className="relative group"
+      >
+        {/* Animated Glow Background - Alternating between blue and purple for a modern look */}
+        <motion.div
+          animate={{
+            boxShadow: [
+              "0 0 20px rgba(59, 130, 246, 0.4)", // Blue
+              "0 0 40px rgba(168, 85, 247, 0.6)", // Purple
+              "0 0 20px rgba(59, 130, 246, 0.4)"  // Blue
+            ],
+            scale: [1, 1.01, 1]
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 blur-2xl opacity-40 group-hover:opacity-80 transition-opacity duration-500 pointer-events-none"
         />
-        
-        {/* Search Icon */}
-        <div className="absolute left-4 text-zinc-600 group-focus-within:text-green-500 transition-colors">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+
+        <div className="relative z-10 flex items-center bg-zinc-950/90 backdrop-blur-2xl border border-zinc-800/80 rounded-2xl overflow-hidden group-focus-within:border-blue-500/50 transition-all duration-500 shadow-2xl">
+          <div className="pl-6 text-zinc-500 group-focus-within:text-blue-500 transition-colors">
+            <Search size={22} strokeWidth={2.5} />
+          </div>
+          
+          <input
+            type="text"
+            placeholder="Buscar produtos, categorias ou marcas..."
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full bg-transparent border-none px-4 py-6 text-lg text-white placeholder:text-zinc-600 focus:outline-none font-medium"
+          />
+
+          {value && (
+            <button
+              onClick={() => onChange('')}
+              className="pr-6 text-zinc-600 hover:text-white transition-colors p-2"
+            >
+              <X size={20} strokeWidth={2.5} />
+            </button>
+          )}
         </div>
-
-        {/* Clear Icon */}
-        {value && (
-          <button 
-            onClick={() => onChange('')}
-            className="absolute right-4 text-zinc-700 hover:text-white transition-colors p-1"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
-      </div>
-
-      {/* Subtle bottom line for premium feel */}
-      <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[1px] bg-gradient-to-r from-transparent via-green-500/40 to-transparent transition-all duration-700 ${neonEffect ? 'w-3/4 opacity-100 group-focus-within:w-full' : 'w-0 opacity-0'}`}></div>
+      </motion.div>
     </div>
   );
 };

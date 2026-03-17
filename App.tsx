@@ -65,7 +65,7 @@ const App: React.FC = () => {
       }
     });
 
-    const handleScroll = () => setIsScrolled(window.scrollY > 150);
+    const handleScroll = () => setIsScrolled(window.scrollY > 100);
     window.addEventListener('scroll', handleScroll);
     
     return () => {
@@ -161,9 +161,6 @@ const App: React.FC = () => {
   // --- RENDERIZAÇÃO VITRINE (DOMÍNIO PRINCIPAL) ---
   return (
     <div className="min-h-screen bg-black text-white selection:bg-green-500/30 flex flex-col overflow-x-hidden">
-      {settings.announcementBarActive && announcements.length > 0 && (
-        <AnnouncementBar announcements={announcements} />
-      )}
       <Header 
         isScrolled={isScrolled} 
         searchQuery={searchQuery} 
@@ -171,10 +168,18 @@ const App: React.FC = () => {
         activeLogo={activeLogo} 
         onResetFilter={handleResetFilters} 
         showAnnouncement={settings.announcementBarActive && announcements.length > 0}
+        announcements={announcements}
       />
       
-      <main className="flex-grow">
-        <Hero />
+      <main className={`flex-grow ${settings.announcementBarActive && announcements.length > 0 ? 'pt-10' : ''}`}>
+        <Hero logoUrl={activeLogo?.midia_url} />
+        
+        {/* Search Bar Section - Modern Glow */}
+        <div className="container mx-auto px-4 -mt-10 relative z-30 mb-16">
+          <div className="max-w-3xl mx-auto">
+            <SearchBar value={searchQuery} onChange={setSearchQuery} />
+          </div>
+        </div>
         
         {!isBrowsing && (
           <div className="space-y-0">

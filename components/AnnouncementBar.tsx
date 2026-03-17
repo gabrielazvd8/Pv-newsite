@@ -43,7 +43,7 @@ const AnnouncementBar: React.FC<AnnouncementBarProps> = ({ announcements }) => {
   const currentAnn = announcements[currentIndex] || announcements[0];
 
   return (
-    <div className="w-full bg-white text-black py-2.5 px-4 overflow-hidden relative z-[60] border-b border-zinc-200 h-10 flex items-center justify-center">
+    <div className="w-full bg-white text-black py-2.5 px-4 overflow-hidden border-b border-zinc-200 h-10 flex items-center justify-center relative">
       <AnimatePresence mode="wait">
         <motion.div
           key={currentAnn.id || currentIndex}

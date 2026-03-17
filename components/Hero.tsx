@@ -3,7 +3,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import * as storage from '../services/storage';
 import { CarouselImage } from '../types';
 
-const Hero: React.FC = () => {
+interface HeroProps {
+  logoUrl?: string;
+}
+
+const Hero: React.FC<HeroProps> = ({ logoUrl }) => {
   const [slides, setSlides] = useState<CarouselImage[]>([]);
   const [current, setCurrent] = useState(0);
 
@@ -45,7 +49,7 @@ const Hero: React.FC = () => {
   };
 
   return (
-    <div className="relative h-[75vh] md:h-[85vh] w-full overflow-hidden bg-black">
+    <div className="relative h-[80vh] md:h-screen w-full overflow-hidden bg-black">
       {activeSlides.map((slide, i) => (
         <div 
           key={slide.id}
@@ -62,7 +66,16 @@ const Hero: React.FC = () => {
             alt={slide.title || "PV Sports Banner"} 
           />
           
-          <div className={`absolute inset-0 flex flex-col justify-center container mx-auto px-6 md:px-20 z-20 pt-12 ${getAlignClasses(slide.align)}`}>
+          <div className={`absolute inset-0 flex flex-col justify-start container mx-auto px-6 md:px-20 z-20 pt-24 md:pt-32 ${getAlignClasses(slide.align)}`}>
+            {logoUrl && (
+              <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-1000 w-full flex justify-center">
+                <img 
+                  src={logoUrl} 
+                  className="max-h-24 md:max-h-32 w-auto object-contain drop-shadow-2xl" 
+                  alt="Logo" 
+                />
+              </div>
+            )}
             {slide.subtitle && (
               <span className="text-green-500 text-xs md:text-sm font-black uppercase tracking-[0.8em] mb-6 bg-green-500/10 px-6 py-2 rounded-full border border-green-500/20 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-1000">
                 {slide.subtitle}
