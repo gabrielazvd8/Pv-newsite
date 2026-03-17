@@ -351,7 +351,7 @@ export const saveProduct = async (p: Partial<Product>) => {
     isLancamento: p.isLancamento ?? false,
     isPromo: p.isPromo ?? false,
     isOnSale: p.isOnSale ?? false,
-    price: p.price || '',
+    price: p.price || null,
     oldPrice: p.oldPrice || null,
     promoPrice: p.promoPrice || null,
     ativo: p.ativo ?? true,

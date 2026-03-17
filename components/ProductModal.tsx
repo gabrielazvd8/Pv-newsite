@@ -138,7 +138,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
 
           <div className="space-y-4">
             <a 
-              href={`https://wa.me/5584998081630?text=Olá! Gostaria de mais informações sobre: ${product.name}`}
+              href={`https://wa.me/5584998538567?text=Olá PV! Gostaria de mais informações sobre: ${product.name}`}
               target="_blank"
               rel="noopener noreferrer"
               className={`flex items-center justify-center gap-3 w-full py-5 text-xs uppercase tracking-[0.2em] font-black transition-all active:scale-[0.98] shadow-xl ${product.isPromo ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-white text-zinc-950 hover:bg-green-500'}`}

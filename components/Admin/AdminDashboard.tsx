@@ -203,14 +203,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     }
 
     if (isPromo) {
-      if (!oldPrice || !promoPrice) return alert("Para produtos em promoção, Preço Antigo e Preço Promocional são obrigatórios.");
+      if (!oldPrice || !promoPrice) return alert("Para produtos em promoção é obrigatório informar o preço antigo e o preço promocional.");
       const pOld = parseFloat(oldPrice.replace(',', '.'));
       const pPromo = parseFloat(promoPrice.replace(',', '.'));
+      if (isNaN(pOld) || isNaN(pPromo)) return alert("Preços inválidos.");
       if (pPromo >= pOld) {
         return alert("O preço promocional deve ser menor que o preço antigo.");
       }
-    } else {
-      if (!price) return alert("O campo Preço é obrigatório.");
     }
 
     const cat = categories.find(c => c.id === catId);
@@ -229,7 +228,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
         cloudinary_ids: currentGallery.map(g => g.cid),
         video: currentVideo?.url || null,
         video_cloudinary_id: currentVideo?.cid || null,
-        price: isPromo ? promoPrice : price,
+        price: isPromo ? promoPrice : (price || null),
         oldPrice: isPromo ? oldPrice : null,
         promoPrice: isPromo ? promoPrice : null,
         isPromo,
