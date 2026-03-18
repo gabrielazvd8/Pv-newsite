@@ -55,11 +55,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
         </button>
 
         {/* Galeria Lado Esquerdo */}
-        <div className="w-full md:w-3/5 h-[45vh] md:h-auto overflow-hidden relative group bg-black">
+        <div className="w-full md:w-3/5 h-[300px] md:h-[450px] flex items-center justify-center overflow-hidden relative group bg-black">
           {currentMedia.type === 'video' ? (
             <video 
               src={currentMedia.url} 
-              className="w-full h-full object-contain"
+              className="max-w-full max-h-full object-contain"
               controls
               autoPlay
               muted
@@ -69,7 +69,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
             <img 
               src={currentMedia.url} 
               alt={product.name}
-              className="w-full h-full object-contain transition-all duration-700"
+              className="max-w-full max-h-full object-contain transition-all duration-700"
             />
           )}
           
@@ -144,14 +144,17 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
                   <button 
                     key={idx} 
                     onClick={() => setActiveMediaIdx(idx)}
-                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all relative ${idx === activeMediaIdx ? 'border-green-500 scale-105' : 'border-zinc-800 opacity-60 hover:opacity-100'}`}
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all relative bg-black flex items-center justify-center ${idx === activeMediaIdx ? 'border-green-500 scale-105' : 'border-zinc-800 opacity-60 hover:opacity-100'}`}
                   >
                     {media.type === 'video' ? (
-                      <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-zinc-500" fill="currentColor" viewBox="0 0 24 24"><path d="M10 15.5l6-3.5-6-3.5v7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8-8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                      <div className="w-full h-full flex items-center justify-center relative">
+                        <video src={media.url} className="w-full h-full object-contain" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M10 15.5l6-3.5-6-3.5v7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8-8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                        </div>
                       </div>
                     ) : (
-                      <img src={media.url} className="w-full h-full object-cover" alt="" />
+                      <img src={media.url} className="w-full h-full object-contain" alt="" />
                     )}
                   </button>
                 ))}
