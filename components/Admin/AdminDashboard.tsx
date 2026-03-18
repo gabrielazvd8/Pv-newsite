@@ -47,6 +47,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const [isUploading, setIsUploading] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [search, setSearch] = useState("");
   
   const multiFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -428,6 +429,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
 
   const activeProducts = products.filter(p => p.ativo !== false);
 
+  const filteredProducts = activeProducts.filter((produto: any) => {
+    const term = search.toLowerCase();
+    return (
+      produto.productCode?.toLowerCase().includes(term) ||
+      (produto.nome || produto.name)?.toLowerCase().includes(term) ||
+      produto.time?.toLowerCase().includes(term)
+    );
+  });
+
   if (isVerifying) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[500]">
@@ -663,7 +673,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             </div>
             
             <div className="lg:col-span-7 space-y-4">
-              {(tab === 'products' ? (showAll ? activeProducts : activeProducts.slice(0, 4)) : tab === 'categories' ? categories : subcategories).map((item: any) => (
+              {tab === 'products' && (
+                <div className="mb-6">
+                  <input
+                    type="text"
+                    placeholder="Buscar por código, nome ou time..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full md:w-80 px-4 py-3 rounded-xl bg-zinc-900 text-white border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-green-500 text-[10px] uppercase font-black tracking-widest"
+                  />
+                </div>
+              )}
+              
+              {(tab === 'products' ? (showAll ? filteredProducts : filteredProducts.slice(0, 4)) : tab === 'categories' ? categories : subcategories).map((item: any) => (
                 <div key={item.id} className="bg-zinc-950 p-4 sm:p-6 border border-zinc-900 rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row items-center justify-between hover:border-zinc-700 transition-all gap-4">
                   <div className="flex items-center gap-4 w-full">
                     <div className={`w-10 h-10 sm:w-12 sm:h-12 overflow-hidden border border-zinc-800 bg-black flex-shrink-0 ${tab === 'subcategories' ? 'rounded-full' : 'rounded-lg'}`}>
@@ -708,7 +730,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                 </div>
               ))}
 
-              {tab === 'products' && activeProducts.length > 4 && (
+              {tab === 'products' && filteredProducts.length > 4 && (
                 <div className="flex justify-center mt-4">
                   <button 
                     onClick={() => setShowAll(!showAll)}
