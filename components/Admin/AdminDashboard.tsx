@@ -2,7 +2,7 @@
 /** @AI_LOCKED */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Star } from 'lucide-react';
+import { Star, Search, X } from 'lucide-react';
 import * as storage from '../../services/storage';
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem, Announcement } from '../../types';
 // Fix: Import onAuthStateChanged and auth exclusively from storage service to resolve environment-specific export issues
@@ -17,6 +17,7 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpdate }) => {
   const [isVerifying, setIsVerifying] = useState(true);
   const [tab, setTab] = useState<'products' | 'categories' | 'subcategories' | 'settings'>('products');
+  const [searchTerm, setSearchTerm] = useState('');
   // Fix: Renamed 'carrossel' to 'carousel' in the state type to match comparisons and ID usage
   const [subTab, setSubTab] = useState<'sections' | 'carousel' | 'logo' | 'teampv' | 'announcement'>('sections');
   
@@ -223,6 +224,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
       await storage.saveProduct({
         id: editingItem?.id,
         name,
+        productCode: fd.get('productCode') as string,
+        teamName: fd.get('teamName') as string,
         description: fd.get('description') as string,
         categoryId: catId,
         categoryName: cat?.nome,
@@ -392,7 +395,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     }
   };
 
-  const activeProducts = products.filter(p => p.ativo !== false);
+  const activeProducts = products.filter(p => {
+    const matchesSearch = searchTerm === '' || 
+      (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.productCode || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.teamName || '').toLowerCase().includes(searchTerm.toLowerCase());
+    return p.ativo !== false && matchesSearch;
+  });
 
   if (isVerifying) {
     return (
@@ -453,6 +462,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                     <label className="text-[9px] uppercase font-black text-zinc-600 ml-2">Nome</label>
                     <input type="text" name={tab === 'products' ? "name" : "nome"} defaultValue={editingItem?.name || editingItem?.nome} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-xl focus:border-green-500 outline-none" required />
                   </div>
+
+                  {tab === 'products' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] uppercase font-black text-zinc-600 ml-2">Código do Produto</label>
+                        <input type="text" name="productCode" defaultValue={editingItem?.productCode} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-xl focus:border-green-500 outline-none" placeholder="Ex: PV-123" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] uppercase font-black text-zinc-600 ml-2">Nome do Time</label>
+                        <input type="text" name="teamName" defaultValue={editingItem?.teamName} className="w-full bg-black border border-zinc-800 p-4 text-sm rounded-xl focus:border-green-500 outline-none" placeholder="Ex: Flamengo" />
+                      </div>
+                    </div>
+                  )}
                   
                   {tab === 'subcategories' && (
                     <div className="space-y-1">
@@ -598,7 +620,38 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             </div>
             
             <div className="lg:col-span-7 space-y-4">
-              {(tab === 'products' ? activeProducts : tab === 'categories' ? categories : subcategories).map((item: any) => (
+              {tab === 'products' && (
+                <div className="relative group mb-6">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <Search className="w-4 h-4 text-zinc-600 group-focus-within:text-green-500 transition-colors" />
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="Buscar por código ou nome do time..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-900 p-4 pl-12 text-sm rounded-2xl focus:border-green-500 outline-none transition-all shadow-xl"
+                  />
+                  {searchTerm && (
+                    <button 
+                      onClick={() => setSearchTerm('')}
+                      className="absolute inset-y-0 right-4 flex items-center text-zinc-600 hover:text-white transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              )}
+              
+              {(tab === 'products' ? activeProducts : tab === 'categories' ? categories : subcategories).length === 0 && searchTerm !== '' ? (
+                <div className="bg-zinc-950 p-12 border border-zinc-900 rounded-3xl text-center space-y-4">
+                  <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto">
+                    <Search className="w-8 h-8 text-zinc-700" />
+                  </div>
+                  <p className="text-zinc-500 font-medium">Nenhum produto encontrado para "{searchTerm}"</p>
+                  <button onClick={() => setSearchTerm('')} className="text-green-500 text-xs uppercase font-black hover:underline">Limpar busca</button>
+                </div>
+              ) : (tab === 'products' ? activeProducts : tab === 'categories' ? categories : subcategories).map((item: any) => (
                 <div key={item.id} className="bg-zinc-950 p-4 sm:p-6 border border-zinc-900 rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row items-center justify-between hover:border-zinc-700 transition-all gap-4">
                   <div className="flex items-center gap-4 w-full">
                     <div className={`w-10 h-10 sm:w-12 sm:h-12 overflow-hidden border border-zinc-800 bg-black flex-shrink-0 ${tab === 'subcategories' ? 'rounded-full' : 'rounded-lg'}`}>

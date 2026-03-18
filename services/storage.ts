@@ -365,6 +365,8 @@ export const saveProduct = async (p: Partial<Product>) => {
     price: p.price || null,
     oldPrice: p.oldPrice || null,
     promoPrice: p.promoPrice || null,
+    productCode: p.productCode || '',
+    teamName: p.teamName || '',
     ativo: p.ativo ?? true,
     atualizadoEm: serverTimestamp()
   };

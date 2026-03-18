@@ -41,6 +41,8 @@ export interface Product {
   price?: string | null;
   oldPrice?: string | null;
   promoPrice?: string | null;
+  productCode?: string;
+  teamName?: string;
   ativo: boolean;
   criadoEm?: any;
 }
