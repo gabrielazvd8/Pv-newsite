@@ -2,7 +2,9 @@
 /** @AI_LOCKED */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Star } from 'lucide-react';
+import { Star, FileText } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import * as storage from '../../services/storage';
 import { Product, Category, Subcategory, AppSettings, CarouselImage, Logo, TeamPVItem, Announcement } from '../../types';
 // Fix: Import onAuthStateChanged and auth exclusively from storage service to resolve environment-specific export issues
@@ -376,6 +378,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     const f = document.querySelector('form'); if (f) f.reset();
   };
 
+  const handleGeneratePDF = () => {
+    const doc = new jsPDF();
+    const date = new Date().toLocaleDateString('pt-BR');
+    
+    doc.setFontSize(18);
+    doc.text("Relatório de Camisas", 14, 20);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Gerado em: ${date}`, 14, 28);
+
+    const tableData = products.map(p => [
+      p.productCode || '-',
+      p.name,
+      p.categoryName || '-',
+      p.price ? `R$ ${p.price}` : '-'
+    ]);
+
+    autoTable(doc, {
+      startY: 35,
+      head: [['CÓDIGO', 'NOME', 'CATEGORIA', 'PREÇO']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: 'bold' }, // Green-600
+      styles: { fontSize: 9, cellPadding: 3 },
+      alternateRowStyles: { fillColor: [245, 245, 245] }
+    });
+
+    doc.save(`relatorio-camisas-${date.replace(/\//g, '-')}.pdf`);
+  };
+
   const startEdit = (item: any) => {
     setEditingItem(item);
     if (tab === 'products') {
@@ -674,6 +706,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                   </div>
                 </div>
               ))}
+              
+              {tab === 'products' && products.length > 0 && (
+                <div className="mt-12 flex justify-center pb-8">
+                  <button 
+                    onClick={handleGeneratePDF}
+                    className="group flex items-center gap-3 px-8 py-4 bg-zinc-900 text-green-500 text-[10px] uppercase font-black rounded-xl border border-zinc-800 hover:border-green-500 hover:bg-green-500/5 transition-all shadow-xl"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Gerar PDF das Camisas
+                  </button>
+                </div>
+              )}
             </div>
           </>
         ) : (
