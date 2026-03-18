@@ -28,13 +28,60 @@ const firebaseConfig = {
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-
-/**
- * INITIALIZATION
- * Simplificado para usar getFirestore padrão, que gerencia automaticamente a melhor conexão.
- */
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// --- ERROR HANDLING ---
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+};
 
 /**
  * TESTE DE CONEXÃO
@@ -136,7 +183,7 @@ const setLocal = (key: string, data: any) => localStorage.setItem(key, JSON.stri
 export const deleteFromCloudinary = async (public_id: string, resourceType: 'image' | 'video' = 'image'): Promise<boolean> => {
   if (!public_id) return true;
   try {
-    const response = await fetch('/api/cloudinary-delete', {
+    const response = await fetch('/api/delete-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ public_id, resource_type: resourceType })
@@ -235,29 +282,34 @@ export const deleteCategory = async (id: string) => {
     const subQuery = query(collection(db, "site_subcategorias"), where("categoriaId", "==", id));
     const subSnap = await getDocs(subQuery);
     
-    const batch = writeBatch(db);
     const cloudinaryDeletions: Promise<any>[] = [];
 
-    // Adicionar subcategorias ao batch e fila de deleção Cloudinary
+    // Fila de deleção Cloudinary para subcategorias
     subSnap.docs.forEach(subDoc => {
       const subData = subDoc.data() as Subcategory;
       if (subData.cloudinary_id) {
         cloudinaryDeletions.push(deleteFromCloudinary(subData.cloudinary_id));
       }
-      batch.delete(subDoc.ref);
     });
 
-    // Adicionar categoria ao batch
-    batch.delete(categoryRef);
+    // Fila de deleção Cloudinary para a categoria
     if (categoryData.cloudinary_id) {
       cloudinaryDeletions.push(deleteFromCloudinary(categoryData.cloudinary_id));
     }
 
-    // Executar deleção no Banco (Atômico)
-    await batch.commit();
+    // Executar deleções no Cloudinary PRIMEIRO (Melhor esforço)
+    if (cloudinaryDeletions.length > 0) {
+      await Promise.allSettled(cloudinaryDeletions);
+    }
 
-    // Executar deleções no Cloudinary (Melhor esforço)
-    await Promise.allSettled(cloudinaryDeletions);
+    // 2. Executar deleção no Banco (Atômico)
+    const batch = writeBatch(db);
+    subSnap.docs.forEach(subDoc => {
+      batch.delete(subDoc.ref);
+    });
+    batch.delete(categoryRef);
+    
+    await batch.commit();
     
     return true;
   } catch (err) {
@@ -309,13 +361,13 @@ export const deleteSubcategory = async (id: string) => {
     if (!docSnap.exists()) return;
     const data = docSnap.data() as Subcategory;
 
-    // Deleta do Banco primeiro
-    await deleteDoc(docRef);
-
-    // Deleta do Cloudinary
+    // 1. Deleta do Cloudinary primeiro
     if (data.cloudinary_id) {
       await deleteFromCloudinary(data.cloudinary_id);
     }
+
+    // 2. Deleta do Banco
+    await deleteDoc(docRef);
     
     return true;
   } catch (err) {
@@ -474,22 +526,41 @@ export const deleteProduct = async (id: string) => {
     const docRef = doc(db, "site_produtos", id);
     const docSnap = await getDoc(docRef);
     
-    if (!docSnap.exists()) return;
+    if (!docSnap.exists()) {
+      console.error("Produto não encontrado no Firestore.");
+      return false;
+    }
+    
     const data = docSnap.data() as Product;
 
-    // Deleta do Banco
-    await deleteDoc(docRef);
-
-    // Deleta Mídias do Cloudinary
+    // 1. Deleta Mídias do Cloudinary PRIMEIRO
     const deletions: Promise<any>[] = [];
+    
+    // Deleta galeria de imagens
     if (data.cloudinary_ids && data.cloudinary_ids.length > 0) {
-      data.cloudinary_ids.forEach(cid => deletions.push(deleteFromCloudinary(cid, 'image')));
+      data.cloudinary_ids.forEach(cid => {
+        if (cid) deletions.push(deleteFromCloudinary(cid, 'image'));
+      });
     }
+    
+    // Deleta vídeo
     if (data.video_cloudinary_id) {
       deletions.push(deleteFromCloudinary(data.video_cloudinary_id, 'video'));
     }
 
-    await Promise.allSettled(deletions);
+    // Aguarda todas as deleções do Cloudinary (usamos allSettled para não travar se uma falhar)
+    if (deletions.length > 0) {
+      await Promise.allSettled(deletions);
+    }
+
+    // 2. Deleta do Banco Firestore
+    try {
+      await deleteDoc(docRef);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `site_produtos/${id}`);
+    }
+
+    console.log(`Produto ${id} e suas mídias foram excluídos com sucesso.`);
     return true;
   } catch (err) {
     console.error("Erro ao excluir produto:", err);
@@ -576,13 +647,19 @@ export const saveCarouselImage = async (item: Partial<CarouselImage>) => {
 };
 
 export const deleteCarouselImage = async (id: string) => {
-  const docRef = doc(db, "site_banners", id);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    if (data.cloudinary_id) await deleteFromCloudinary(data.cloudinary_id);
+  try {
+    const docRef = doc(db, "site_banners", id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.cloudinary_id) await deleteFromCloudinary(data.cloudinary_id);
+    }
+    await deleteDoc(docRef);
+    return true;
+  } catch (err) {
+    console.error("Erro ao excluir banner:", err);
+    throw err;
   }
-  await deleteDoc(docRef);
 };
 
 export const getLogos = async (): Promise<Logo[]> => {
@@ -631,14 +708,20 @@ export const setActiveLogo = async (id: string) => {
 };
 
 export const deleteLogo = async (id: string) => {
-  const docRef = doc(db, "site_logos", id);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    const cid = data.cloudinary_id || data.public_id;
-    if (cid) await deleteFromCloudinary(cid);
+  try {
+    const docRef = doc(db, "site_logos", id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const cid = data.cloudinary_id || data.public_id;
+      if (cid) await deleteFromCloudinary(cid);
+    }
+    await deleteDoc(docRef);
+    return true;
+  } catch (err) {
+    console.error("Erro ao excluir logo:", err);
+    throw err;
   }
-  await deleteDoc(docRef);
 };
 
 export const getTeamPVItems = async (): Promise<TeamPVItem[]> => {
@@ -656,13 +739,19 @@ export const saveTeamPVItem = async (item: Partial<TeamPVItem>) => {
 };
 
 export const deleteTeamPVItem = async (id: string) => {
-  const docRef = doc(db, "site_teampv", id);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    if (data.cloudinary_id) await deleteFromCloudinary(data.cloudinary_id);
+  try {
+    const docRef = doc(db, "site_teampv", id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.cloudinary_id) await deleteFromCloudinary(data.cloudinary_id);
+    }
+    await deleteDoc(docRef);
+    return true;
+  } catch (err) {
+    console.error("Erro ao excluir item Team PV:", err);
+    throw err;
   }
-  await deleteDoc(docRef);
 };
 
 export const saveSettings = async (s: AppSettings) => {

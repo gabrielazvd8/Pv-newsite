@@ -2,9 +2,9 @@
 import { v2 as cloudinary } from 'cloudinary';
 
 cloudinary.config({
-  cloud_name: 'dqvqkfkti',
-  api_key: '394625577664157',
-  api_secret: process.env.CLOUDINARY_SECRET
+  cloud_name: process.env.CLOUD_NAME || 'dqvqkfkti',
+  api_key: process.env.API_KEY || '394625577664157',
+  api_secret: process.env.API_SECRET || process.env.CLOUDINARY_SECRET
 });
 
 export default async function handler(req, res) {
@@ -12,10 +12,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { public_id, resource_type = 'image' } = req.body;
+  const { public_id, publicId, resource_type, resourceType } = req.body;
+  const targetPublicId = public_id || publicId;
+  const targetResourceType = resource_type || resourceType || 'image';
 
-  if (!public_id) {
-    return res.status(400).json({ error: 'public_id is required' });
+  if (!targetPublicId) {
+    return res.status(400).json({ error: 'public_id or publicId is required' });
   }
 
   if (!process.env.CLOUDINARY_SECRET) {
@@ -23,8 +25,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = await cloudinary.uploader.destroy(public_id, {
-      resource_type: resource_type
+    const result = await cloudinary.uploader.destroy(targetPublicId, {
+      resource_type: targetResourceType
     });
 
     if (result.result === 'ok' || result.result === 'not found') {
