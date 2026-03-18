@@ -46,6 +46,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const [currentVideo, setCurrentVideo] = useState<{url: string, cid: string} | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   
   const multiFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -662,7 +663,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
             </div>
             
             <div className="lg:col-span-7 space-y-4">
-              {(tab === 'products' ? activeProducts : tab === 'categories' ? categories : subcategories).map((item: any) => (
+              {(tab === 'products' ? (showAll ? activeProducts : activeProducts.slice(0, 4)) : tab === 'categories' ? categories : subcategories).map((item: any) => (
                 <div key={item.id} className="bg-zinc-950 p-4 sm:p-6 border border-zinc-900 rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row items-center justify-between hover:border-zinc-700 transition-all gap-4">
                   <div className="flex items-center gap-4 w-full">
                     <div className={`w-10 h-10 sm:w-12 sm:h-12 overflow-hidden border border-zinc-800 bg-black flex-shrink-0 ${tab === 'subcategories' ? 'rounded-full' : 'rounded-lg'}`}>
@@ -706,6 +707,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                   </div>
                 </div>
               ))}
+
+              {tab === 'products' && activeProducts.length > 4 && (
+                <div className="flex justify-center mt-4">
+                  <button 
+                    onClick={() => setShowAll(!showAll)}
+                    className="text-[10px] uppercase font-black text-zinc-500 hover:text-green-500 transition-all border border-zinc-900 px-6 py-2 rounded-full hover:border-green-500/30"
+                  >
+                    {showAll ? 'Exibir menos' : 'Exibir mais'}
+                  </button>
+                </div>
+              )}
               
               {tab === 'products' && products.length > 0 && (
                 <div className="mt-12 flex justify-center pb-8">
