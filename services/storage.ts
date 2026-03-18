@@ -365,13 +365,101 @@ export const saveProduct = async (p: Partial<Product>) => {
     price: p.price || null,
     oldPrice: p.oldPrice || null,
     promoPrice: p.promoPrice || null,
-    productCode: p.productCode || '',
-    teamName: p.teamName || '',
+    productCode: p.productCode || null,
     ativo: p.ativo ?? true,
     atualizadoEm: serverTimestamp()
   };
+  
+  // Se for um novo produto e não tiver código, gera um automaticamente
+  if (!p.id && !data.productCode) {
+    data.productCode = await generateNextProductCode();
+  }
+
   if (p.id) await updateDoc(doc(db, "site_produtos", p.id), data);
   else await addDoc(collection(db, "site_produtos"), { ...data, criadoEm: serverTimestamp() });
+};
+
+/**
+ * GERA O PRÓXIMO CÓDIGO DE PRODUTO (PV-XXX)
+ */
+export const generateNextProductCode = async (): Promise<string> => {
+  try {
+    const q = query(collection(db, "site_produtos"));
+    const snap = await getDocs(q);
+    const products = snap.docs.map(d => d.data() as Product);
+    
+    const codes = products
+      .map(p => p.productCode)
+      .filter((code): code is string => !!code && code.startsWith('PV-'));
+    
+    let maxNumber = 0;
+    codes.forEach(code => {
+      const numPart = code.split('-')[1];
+      const num = parseInt(numPart, 10);
+      if (!isNaN(num) && num > maxNumber) {
+        maxNumber = num;
+      }
+    });
+    
+    const nextNumber = maxNumber + 1;
+    return `PV-${String(nextNumber).padStart(3, '0')}`;
+  } catch (err) {
+    console.error("Erro ao gerar código de produto:", err);
+    return "PV-001";
+  }
+};
+
+/**
+ * MIGRAÇÃO: GERA CÓDIGOS PARA PRODUTOS QUE NÃO POSSUEM
+ */
+export const migrateProductCodes = async (): Promise<number> => {
+  try {
+    const q = query(collection(db, "site_produtos"));
+    const snap = await getDocs(q);
+    const allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+    
+    const productsWithoutCode = allProducts.filter(p => !p.productCode);
+    if (productsWithoutCode.length === 0) return 0;
+    
+    // Ordenar por data de criação para manter a sequência lógica
+    const sortedToMigrate = [...productsWithoutCode].sort((a, b) => {
+      const dateA = a.criadoEm?.seconds || 0;
+      const dateB = b.criadoEm?.seconds || 0;
+      return dateA - dateB;
+    });
+
+    // Descobrir o ponto de partida
+    const existingCodes = allProducts
+      .map(p => p.productCode)
+      .filter((code): code is string => !!code && code.startsWith('PV-'));
+    
+    let maxNumber = 0;
+    existingCodes.forEach(code => {
+      const numPart = code.split('-')[1];
+      const num = parseInt(numPart, 10);
+      if (!isNaN(num) && num > maxNumber) maxNumber = num;
+    });
+
+    const batch = writeBatch(db);
+    let count = 0;
+    let currentNumber = maxNumber + 1;
+    
+    for (const product of sortedToMigrate) {
+      const newCode = `PV-${String(currentNumber).padStart(3, '0')}`;
+      batch.update(doc(db, "site_produtos", product.id), { 
+        productCode: newCode,
+        atualizadoEm: serverTimestamp()
+      });
+      currentNumber++;
+      count++;
+    }
+    
+    await batch.commit();
+    return count;
+  } catch (err) {
+    console.error("Erro na migração de códigos:", err);
+    throw err;
+  }
 };
 
 export const updateProductStatus = async (id: string, updates: Partial<Product>) => {

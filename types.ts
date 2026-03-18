@@ -22,6 +22,7 @@ export interface Subcategory {
 
 export interface Product {
   id: string;
+  productCode?: string;
   name: string; // nome
   description: string; // descricao
   categoryId: string; // categoriaId
@@ -41,8 +42,6 @@ export interface Product {
   price?: string | null;
   oldPrice?: string | null;
   promoPrice?: string | null;
-  productCode?: string;
-  teamName?: string;
   ativo: boolean;
   criadoEm?: any;
 }
