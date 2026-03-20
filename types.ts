@@ -18,6 +18,7 @@ export interface Subcategory {
   ativo: boolean;
   ordem?: number;
   criadoEm?: any;
+  hasCategoryError?: boolean;
 }
 
 export interface Product {
@@ -42,6 +43,11 @@ export interface Product {
   price?: string | null;
   oldPrice?: string | null;
   promoPrice?: string | null;
+  sizes?: {
+    kids: string[];
+    adult: string[];
+    babylook: string[];
+  };
   ativo: boolean;
   criadoEm?: any;
 }

@@ -137,6 +137,44 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
               <p dangerouslySetInnerHTML={{ __html: product.description }} />
             </div>
 
+            {product.isProntaEntrega && product.sizes && (
+              <div className="mb-8 p-4 bg-zinc-800/30 rounded-xl border border-zinc-800/50">
+                <p className="text-[10px] uppercase font-black text-zinc-500 mb-4 tracking-widest">Tamanhos Disponíveis</p>
+                <div className="space-y-3">
+                  {product.sizes.kids && product.sizes.kids.length > 0 && (
+                    <div className="flex items-center gap-3">
+                      <span className="text-[9px] font-bold text-zinc-400 uppercase min-w-[60px]">👶 Criança:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.sizes.kids.map(s => (
+                          <span key={s} className="px-2 py-0.5 bg-zinc-800 text-zinc-300 text-[10px] font-bold rounded border border-zinc-700">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {product.sizes.adult && product.sizes.adult.length > 0 && (
+                    <div className="flex items-center gap-3">
+                      <span className="text-[9px] font-bold text-zinc-400 uppercase min-w-[60px]">🧑 Adulto:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.sizes.adult.map(s => (
+                          <span key={s} className="px-2 py-0.5 bg-zinc-800 text-zinc-300 text-[10px] font-bold rounded border border-zinc-700">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {product.sizes.babylook && product.sizes.babylook.length > 0 && (
+                    <div className="flex items-center gap-3">
+                      <span className="text-[9px] font-bold text-zinc-400 uppercase min-w-[60px]">👕 Babylook:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.sizes.babylook.map(s => (
+                          <span key={s} className="px-2 py-0.5 bg-zinc-800 text-zinc-300 text-[10px] font-bold rounded border border-zinc-700">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Thumbnail Grid */}
             {productMedias.length > 1 && (
               <div className="grid grid-cols-4 gap-2 mb-12">

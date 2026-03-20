@@ -278,35 +278,25 @@ export const deleteCategory = async (id: string) => {
     if (!categorySnap.exists()) return;
     const categoryData = categorySnap.data() as Category;
 
-    // 1. Buscar subcategorias vinculadas para deleção em cascata
+    // 1. Buscar subcategorias vinculadas para marcar como problemáticas
     const subQuery = query(collection(db, "site_subcategorias"), where("categoriaId", "==", id));
     const subSnap = await getDocs(subQuery);
     
-    const cloudinaryDeletions: Promise<any>[] = [];
-
-    // Fila de deleção Cloudinary para subcategorias
-    subSnap.docs.forEach(subDoc => {
-      const subData = subDoc.data() as Subcategory;
-      if (subData.cloudinary_id) {
-        cloudinaryDeletions.push(deleteFromCloudinary(subData.cloudinary_id));
-      }
-    });
-
-    // Fila de deleção Cloudinary para a categoria
+    // 2. Deletar imagem da categoria no Cloudinary (se existir)
     if (categoryData.cloudinary_id) {
-      cloudinaryDeletions.push(deleteFromCloudinary(categoryData.cloudinary_id));
+      await deleteFromCloudinary(categoryData.cloudinary_id);
     }
 
-    // Executar deleções no Cloudinary PRIMEIRO (Melhor esforço)
-    if (cloudinaryDeletions.length > 0) {
-      await Promise.allSettled(cloudinaryDeletions);
-    }
-
-    // 2. Executar deleção no Banco (Atômico)
+    // 3. Atualizar subcategorias vinculadas (Marcar como erro)
     const batch = writeBatch(db);
     subSnap.docs.forEach(subDoc => {
-      batch.delete(subDoc.ref);
+      batch.update(subDoc.ref, { 
+        hasCategoryError: true,
+        categoriaNome: "❗ Categoria removida"
+      });
     });
+
+    // 4. Deletar a categoria no Firestore
     batch.delete(categoryRef);
     
     await batch.commit();

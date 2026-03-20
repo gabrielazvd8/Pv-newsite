@@ -16,6 +16,12 @@ interface AdminDashboardProps {
   onUpdate: () => void;
 }
 
+const SIZE_OPTIONS = {
+  kids: ['2', '4', '6', '8', '10', '12'],
+  adult: ['P', 'M', 'G', 'GG'],
+  babylook: ['P', 'M', 'G', 'GG']
+};
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpdate }) => {
   const [isVerifying, setIsVerifying] = useState(true);
   const [tab, setTab] = useState<'products' | 'categories' | 'subcategories' | 'settings'>('products');
@@ -40,6 +46,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formIsPromo, setFormIsPromo] = useState(false);
+  const [formIsProntaEntrega, setFormIsProntaEntrega] = useState(false);
+  const [selectedSizes, setSelectedSizes] = useState<{kids: string[], adult: string[], babylook: string[]}>({
+    kids: [],
+    adult: [],
+    babylook: []
+  });
   const [formCategoryId, setFormCategoryId] = useState<string>('');
   const [featuredMediaUrl, setFeaturedMediaUrl] = useState<string | null>(null);
   const [currentGallery, setCurrentGallery] = useState<{url: string, cid: string}[]>([]);
@@ -76,10 +88,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   useEffect(() => {
     if (editingItem && tab === 'products') {
       setFormIsPromo(editingItem.isPromo || false);
+      setFormIsProntaEntrega(editingItem.isProntaEntrega || false);
+      setSelectedSizes(editingItem.sizes || { kids: [], adult: [], babylook: [] });
       setFormCategoryId(editingItem.categoryId || '');
       setFeaturedMediaUrl(editingItem.featuredMediaUrl || null);
     } else {
       setFormIsPromo(false);
+      setFormIsProntaEntrega(false);
+      setSelectedSizes({ kids: [], adult: [], babylook: [] });
       setFormCategoryId('');
       setFeaturedMediaUrl(null);
     }
@@ -244,7 +260,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
         isPromo,
         isOnSale: isPromo,
         isLancamento: fd.get('isLancamento') === 'on',
-        isProntaEntrega: fd.get('isProntaEntrega') === 'on',
+        isProntaEntrega: formIsProntaEntrega,
+        sizes: formIsProntaEntrega ? selectedSizes : { kids: [], adult: [], babylook: [] },
         ativo: fd.get('ativo') === 'on'
       });
       resetForm(); await loadData(); onUpdate();
@@ -359,14 +376,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
   const handleDelete = async (id: string, type: any) => {
     if (!confirm('Deseja excluir permanentemente?')) return;
     setIsUploading(true);
+    
+    // Normalizar o tipo para o singular correto
+    let normalizedType = type;
+    if (type === 'categorie') normalizedType = 'category';
+    if (type === 'subcategorie') normalizedType = 'subcategory';
+
     try {
-      if (type === 'product') await storage.deleteProduct(id);
-      else if (type === 'category') await storage.deleteCategory(id);
-      else if (type === 'subcategory') await storage.deleteSubcategory(id);
-      else if (type === 'logo') await storage.deleteLogo(id);
-      else if (type === 'banner') await storage.deleteCarouselImage(id);
-      else if (type === 'teampv') await storage.deleteTeamPVItem(id);
-      else if (type === 'announcement') await storage.deleteAnnouncement(id);
+      if (normalizedType === 'product') await storage.deleteProduct(id);
+      else if (normalizedType === 'category') await storage.deleteCategory(id);
+      else if (normalizedType === 'subcategory') await storage.deleteSubcategory(id);
+      else if (normalizedType === 'logo') await storage.deleteLogo(id);
+      else if (normalizedType === 'banner') await storage.deleteCarouselImage(id);
+      else if (normalizedType === 'teampv') await storage.deleteTeamPVItem(id);
+      else if (normalizedType === 'announcement') await storage.deleteAnnouncement(id);
       await loadData(); onUpdate();
     } catch (err) { alert(err); } finally { setIsUploading(false); }
   };
@@ -377,6 +400,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
     setCurrentVideo(null);
     setFormCategoryId('');
     setFeaturedMediaUrl(null);
+    setFormIsProntaEntrega(false);
+    setSelectedSizes({ kids: [], adult: [], babylook: [] });
     const f = document.querySelector('form'); if (f) f.reset();
   };
 
@@ -612,10 +637,95 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                              /> PROMO
                            </label>
                            <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isLancamento" defaultChecked={editingItem?.isLancamento} className="accent-white" /> LANÇAMENTO</label>
-                           <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isProntaEntrega" defaultChecked={editingItem?.isProntaEntrega} className="accent-green-500" /> PRONTA</label>
+                           <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer">
+                             <input 
+                               type="checkbox" 
+                               name="isProntaEntrega" 
+                               checked={formIsProntaEntrega} 
+                               onChange={(e) => setFormIsProntaEntrega(e.target.checked)}
+                               className="accent-green-500" 
+                             /> PRONTA
+                           </label>
                            <label className="text-[8px] uppercase font-black flex items-center gap-2 cursor-pointer"><input type="checkbox" name="ativo" defaultChecked={editingItem ? (editingItem.ativo !== false) : true} className="accent-green-500" /> ATIVO</label>
                         </div>
                       </div>
+
+                      {formIsProntaEntrega && (
+                        <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-4">
+                          <p className="text-[10px] uppercase font-black text-zinc-500">Tamanhos Disponíveis</p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Kids */}
+                            <div className="space-y-2">
+                              <p className="text-[9px] uppercase font-bold text-zinc-400">👶 Criança</p>
+                              <div className="flex flex-wrap gap-2">
+                                {SIZE_OPTIONS.kids.map(size => (
+                                  <label key={size} className={`px-2 py-1 rounded border text-[10px] cursor-pointer transition-all ${selectedSizes.kids.includes(size) ? 'bg-green-500 text-black border-green-500' : 'bg-black border-zinc-800 text-zinc-500'}`}>
+                                    <input 
+                                      type="checkbox" 
+                                      className="hidden" 
+                                      checked={selectedSizes.kids.includes(size)}
+                                      onChange={(e) => {
+                                        const newKids = e.target.checked 
+                                          ? [...selectedSizes.kids, size]
+                                          : selectedSizes.kids.filter(s => s !== size);
+                                        setSelectedSizes(prev => ({ ...prev, kids: newKids }));
+                                      }}
+                                    />
+                                    {size}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Adult */}
+                            <div className="space-y-2">
+                              <p className="text-[9px] uppercase font-bold text-zinc-400">🧑 Adulto</p>
+                              <div className="flex flex-wrap gap-2">
+                                {SIZE_OPTIONS.adult.map(size => (
+                                  <label key={size} className={`px-2 py-1 rounded border text-[10px] cursor-pointer transition-all ${selectedSizes.adult.includes(size) ? 'bg-green-500 text-black border-green-500' : 'bg-black border-zinc-800 text-zinc-500'}`}>
+                                    <input 
+                                      type="checkbox" 
+                                      className="hidden" 
+                                      checked={selectedSizes.adult.includes(size)}
+                                      onChange={(e) => {
+                                        const newAdult = e.target.checked 
+                                          ? [...selectedSizes.adult, size]
+                                          : selectedSizes.adult.filter(s => s !== size);
+                                        setSelectedSizes(prev => ({ ...prev, adult: newAdult }));
+                                      }}
+                                    />
+                                    {size}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Babylook */}
+                            <div className="space-y-2">
+                              <p className="text-[9px] uppercase font-bold text-zinc-400">👕 Babylook</p>
+                              <div className="flex flex-wrap gap-2">
+                                {SIZE_OPTIONS.babylook.map(size => (
+                                  <label key={size} className={`px-2 py-1 rounded border text-[10px] cursor-pointer transition-all ${selectedSizes.babylook.includes(size) ? 'bg-green-500 text-black border-green-500' : 'bg-black border-zinc-800 text-zinc-500'}`}>
+                                    <input 
+                                      type="checkbox" 
+                                      className="hidden" 
+                                      checked={selectedSizes.babylook.includes(size)}
+                                      onChange={(e) => {
+                                        const newBabylook = e.target.checked 
+                                          ? [...selectedSizes.babylook, size]
+                                          : selectedSizes.babylook.filter(s => s !== size);
+                                        setSelectedSizes(prev => ({ ...prev, babylook: newBabylook }));
+                                      }}
+                                    />
+                                    {size}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -692,11 +802,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onBack, onUpd
                        <img src={item.midia || item.images?.[0]} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-grow min-w-0">
-                      <h4 className="text-[10px] sm:text-[11px] font-black uppercase italic tracking-tighter truncate">
+                      <h4 className="text-[10px] sm:text-[11px] font-black uppercase italic tracking-tighter truncate flex items-center gap-2">
                         {item.productCode && <span className="text-green-500 mr-1.5">[{item.productCode}]</span>}
                         {item.nome || item.name}
+                        {item.hasCategoryError && <span className="text-red-500 animate-pulse" title="Categoria Pai Removida">❗</span>}
                       </h4>
-                      {item.categoriaNome && <p className="text-[8px] uppercase font-black text-zinc-600 truncate">{item.categoriaNome}</p>}
+                      {item.categoriaNome && (
+                        <p className={`text-[8px] uppercase font-black truncate ${item.hasCategoryError ? 'text-red-500' : 'text-zinc-600'}`}>
+                          {item.categoriaNome}
+                        </p>
+                      )}
                       
                       {/* Botões de Status Rápido na Lista */}
                       {tab === 'products' && (
