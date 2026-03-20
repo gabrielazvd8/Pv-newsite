@@ -229,7 +229,7 @@ const App: React.FC = () => {
               <section className="bg-zinc-950 border-b border-zinc-900 py-24 text-center">
                 <div className="container mx-auto px-4">
                   <span className="text-green-500 text-[11px] font-black uppercase tracking-[0.5em] mb-4 bg-green-500/10 px-4 py-1 rounded-full border border-green-500/20 inline-block">Pronta Entrega</span>
-                  <h2 className="text-5xl md:text-7xl font-black italic uppercase italic tracking-tighter text-white mb-12">FAST <span className="text-green-500">STOCK</span></h2>
+                  <h2 className="text-5xl md:text-7xl font-black italic uppercase italic tracking-tighter text-white mb-12">ESTOQUE <span className="text-green-500">PV</span></h2>
                   <ProductGrid products={prontaEntregaProducts} onProductClick={setSelectedProduct} />
                 </div>
               </section>
