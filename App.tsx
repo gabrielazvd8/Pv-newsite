@@ -1,7 +1,7 @@
 
 /** @AI_LOCKED */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Instagram, MessageCircle } from 'lucide-react';
 import { Product, AppView, Category, Subcategory, AppSettings, Logo, TeamPVItem, Announcement } from './types';
 import * as storage from './services/storage';
@@ -43,6 +43,7 @@ const App: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const productsRef = useRef<HTMLDivElement>(null);
 
   const currentYear = new Date().getFullYear();
 
@@ -137,6 +138,29 @@ const App: React.FC = () => {
     }
   };
 
+  const handleSelectCategory = (id: string) => {
+    setActiveCategory(id);
+    setActiveSubcategory('All');
+    
+    setTimeout(() => {
+      productsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 100);
+  };
+
+  const handleSelectSubcategory = (id: string) => {
+    setActiveSubcategory(id);
+    
+    setTimeout(() => {
+      productsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 100);
+  };
+
   // --- RENDERIZAÇÃO CONDICIONAL POR DOMÍNIO ---
   
   if (isAdminDomain) {
@@ -213,7 +237,16 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <section className="container mx-auto px-4 py-24">
+        <CategoryCarousel 
+          categories={categories} 
+          subcategories={subcategories} 
+          activeCategory={activeCategory} 
+          onCategoryChange={handleSelectCategory}
+          activeSubcategory={activeSubcategory}
+          onSubcategoryChange={handleSelectSubcategory}
+        />
+
+        <section ref={productsRef} className="container mx-auto px-4 py-24 transition-all duration-500 animate-fade-in">
           <div className="flex items-center justify-between mb-12 border-l-[12px] border-green-500 pl-8">
             <h2 className="text-4xl font-black italic uppercase tracking-tighter">
               {activeSubcategory !== 'All' 
@@ -234,18 +267,6 @@ const App: React.FC = () => {
             </div>
           )}
         </section>
-
-        <CategoryCarousel 
-          categories={categories} 
-          subcategories={subcategories} 
-          activeCategory={activeCategory} 
-          onCategoryChange={(id) => { 
-            setActiveCategory(id);
-            setActiveSubcategory('All');
-          }}
-          activeSubcategory={activeSubcategory}
-          onSubcategoryChange={setActiveSubcategory}
-        />
 
         {settings.teamPVSectionActive && teamPVItems.length > 0 && (
           <TeamPVSection items={teamPVItems} />
