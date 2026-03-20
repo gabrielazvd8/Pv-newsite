@@ -56,21 +56,27 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
 
         {/* Galeria Lado Esquerdo */}
         <div className="w-full md:w-3/5 h-[300px] md:h-[450px] flex items-center justify-center overflow-hidden relative group bg-black">
-          {currentMedia.type === 'video' ? (
-            <video 
-              src={currentMedia.url} 
-              className="max-w-full max-h-full object-contain"
-              controls
-              autoPlay
-              muted
-              loop
-            />
+          {currentMedia ? (
+            currentMedia.type === 'video' ? (
+              <video 
+                src={currentMedia.url} 
+                className="max-w-full max-h-full object-contain"
+                controls
+                autoPlay
+                muted
+                loop
+              />
+            ) : (
+              <img 
+                src={currentMedia.url} 
+                alt={product.name}
+                className="max-w-full max-h-full object-contain transition-all duration-700"
+              />
+            )
           ) : (
-            <img 
-              src={currentMedia.url} 
-              alt={product.name}
-              className="max-w-full max-h-full object-contain transition-all duration-700"
-            />
+            <div className="text-zinc-700 text-xs uppercase tracking-widest font-black">
+              Sem Mídia Disponível
+            </div>
           )}
           
           {/* Navegação da Galeria */}
@@ -138,40 +144,29 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
             </div>
 
             {product.isProntaEntrega && product.sizes && (
-              <div className="mb-8 p-4 bg-zinc-800/30 rounded-xl border border-zinc-800/50">
-                <p className="text-[10px] uppercase font-black text-zinc-500 mb-4 tracking-widest">Tamanhos Disponíveis</p>
-                <div className="space-y-3">
-                  {product.sizes.kids && product.sizes.kids.length > 0 && (
-                    <div className="flex items-center gap-3">
-                      <span className="text-[9px] font-bold text-zinc-400 uppercase min-w-[60px]">👶 Criança:</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {product.sizes.kids.map(s => (
-                          <span key={s} className="px-2 py-0.5 bg-zinc-800 text-zinc-300 text-[10px] font-bold rounded border border-zinc-700">{s}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {product.sizes.adult && product.sizes.adult.length > 0 && (
-                    <div className="flex items-center gap-3">
-                      <span className="text-[9px] font-bold text-zinc-400 uppercase min-w-[60px]">🧑 Adulto:</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {product.sizes.adult.map(s => (
-                          <span key={s} className="px-2 py-0.5 bg-zinc-800 text-zinc-300 text-[10px] font-bold rounded border border-zinc-700">{s}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {product.sizes.babylook && product.sizes.babylook.length > 0 && (
-                    <div className="flex items-center gap-3">
-                      <span className="text-[9px] font-bold text-zinc-400 uppercase min-w-[60px]">👕 Babylook:</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {product.sizes.babylook.map(s => (
-                          <span key={s} className="px-2 py-0.5 bg-zinc-800 text-zinc-300 text-[10px] font-bold rounded border border-zinc-700">{s}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <div className="mt-4 mb-8">
+                <p className="font-semibold text-white mb-2">Tamanhos disponíveis:</p>
+
+                {product.sizes.kids && product.sizes.kids.length > 0 && (
+                  <div className="text-sm">
+                    <span className="text-gray-400">Criança: </span>
+                    <span className="text-zinc-300">{product.sizes.kids.join(" • ")}</span>
+                  </div>
+                )}
+
+                {product.sizes.adult && product.sizes.adult.length > 0 && (
+                  <div className="text-sm">
+                    <span className="text-gray-400">Adulto: </span>
+                    <span className="text-zinc-300">{product.sizes.adult.join(" • ")}</span>
+                  </div>
+                )}
+
+                {product.sizes.babylook && product.sizes.babylook.length > 0 && (
+                  <div className="text-sm">
+                    <span className="text-gray-400">Babylook: </span>
+                    <span className="text-zinc-300">{product.sizes.babylook.join(" • ")}</span>
+                  </div>
+                )}
               </div>
             )}
 

@@ -401,6 +401,7 @@ export const saveProduct = async (p: Partial<Product>) => {
     video_cloudinary_id: p.video_cloudinary_id || null,
     featuredMediaUrl: p.featuredMediaUrl || null,
     isProntaEntrega: p.isProntaEntrega ?? false,
+    sizes: p.sizes || { kids: [], adult: [], babylook: [] },
     isLancamento: p.isLancamento ?? false,
     isPromo: p.isPromo ?? false,
     isOnSale: p.isOnSale ?? false,
