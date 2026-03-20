@@ -18,7 +18,7 @@ interface AdminDashboardProps {
 
 const SIZE_OPTIONS = {
   kids: ['2', '4', '6', '8', '10', '12'],
-  adult: ['P', 'M', 'G', 'GG'],
+  adult: ['P', 'M', 'G', 'GG', 'XXG'],
   babylook: ['P', 'M', 'G', 'GG']
 };
 
